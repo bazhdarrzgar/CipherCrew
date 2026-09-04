@@ -143,3 +143,46 @@ def get_classifier():
         print(f"[OK] Classifier loaded from {CLASSIFIER_PATH}")
     return _classifier
 
+# ───────────────────────── Helpers ─────────────────────────
+
+def preprocess_crop(crop_bgr: np.ndarray, mode: str) -> np.ndarray:
+    img = cv2.resize(crop_bgr, (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_AREA)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
+    if mode == 'tf':
+        img = img / 255.0
+    elif mode == 'mobilenet':
+        img = img / 127.5 - 1.0
+    elif mode == 'imagenet':
+        img = img - IMAGENET_MEAN_RGB
+    else:
+        img = img / 255.0
+    return img.astype(np.float32)
+
+
+def select_preprocessing_mode(crops: list) -> str:
+    if not crops:
+        return 'tf'
+    clf = get_classifier()
+    mode_scores = {}
+    for mode in PREPROCESSING_MODES:
+        batch = np.stack([preprocess_crop(c, mode) for c in crops])
+        try:
+            preds = clf.predict(batch, verbose=0)
+        except Exception:
+            preds = np.zeros((len(crops), len(CLASS_NAMES)), dtype=np.float32)
+        max_conf = float(np.mean(np.max(preds, axis=1)))
+        pred_idx = np.argmax(preds, axis=1)
+        counts = np.bincount(pred_idx, minlength=len(CLASS_NAMES))
+        max_frac = float(np.max(counts) / np.sum(counts))
+        mode_scores[mode] = max_conf * (1.0 - max_frac)
+    return max(mode_scores, key=mode_scores.get)
+
+
+def choose_preprocessing_mode(crops: list) -> str:
+    if CLASSIFIER_PREPROCESSING == "auto":
+        return select_preprocessing_mode(crops)
+    if CLASSIFIER_PREPROCESSING in PREPROCESSING_MODES:
+        return CLASSIFIER_PREPROCESSING
+    return "tf"
+
+
