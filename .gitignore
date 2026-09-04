@@ -1,0 +1,71 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments and Virtualenv
+.venv/
+venv/
+*/venv/
+*/.venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Node & Next.js builds
+node_modules/
+*/node_modules/
+.next/
+*/.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+frontend/build_log.txt
+frontend/fix_build.txt
+frontend/*_log.txt
+
+# Large Datasets & Archives (Raw images: ~10 GB)
+Dataset collection/Sample_Datasets/
+**/Sample_Datasets/
+temp_downloads/
+temp_downloads_apple/
+dataset/
+dataset_split/
+
+# Local databases and runtime state
+*.db
+*.sqlite
+*.sqlite3
+detections.db
+Website Building/fruit-web/detections.db
+
+# Secrets and local config files
+.env
+.env.*
+!.env.example
+!Website Building/fruit-web/.env.example
+*.local
+frontend/.env.local
+frontend/.vercel/
+
+# Logs and outputs
+*.log
+results/
+yolo_results/
+smoke-output*.jpg
+
+# Operating System & Editor Files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter Checkpoints
+.ipynb_checkpoints/
