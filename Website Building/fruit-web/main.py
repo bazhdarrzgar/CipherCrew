@@ -186,3 +186,17 @@ def choose_preprocessing_mode(crops: list) -> str:
     return "tf"
 
 
+def scale_params(image: np.ndarray):
+    h, w = image.shape[:2]
+    diag = (w*w + h*h) ** 0.5
+    font_scale = max(0.4, diag / 3000)
+    thickness  = max(1, int(diag // 900))
+    padding    = max(6, int(diag // 220))
+    return font_scale, thickness, padding
+
+
+def draw_transparent_rect(image, pt1, pt2, color, alpha=0.45):
+    overlay = image.copy()
+    cv2.rectangle(overlay, pt1, pt2, color, -1)
+    cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
+
