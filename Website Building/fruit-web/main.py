@@ -36,4 +36,8 @@ _yolo = None
 
 @app.get('/')
 def root():
-    return {'status': 'online', 'message': 'API initialized'}
+    return {'status': 'online'}
+
+@app.get('/health')
+def health():
+    return {'status': 'healthy', 'models_loaded': False}
