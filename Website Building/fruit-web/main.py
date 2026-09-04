@@ -98,3 +98,48 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+def on_startup():
+    database.init_db()
+    print("[OK] SQLite database initialized at", database.DB_PATH)
+
+
+class UpdateHistoryRequest(BaseModel):
+    manual_label: Optional[str] = None
+    is_rejected: Optional[bool] = None
+
+
+# ───────────────────────── Model loading ─────────────────────────
+
+def get_yolo():
+    global _yolo
+    if _yolo is None:
+        if not YOLO_MODEL_PATH.exists():
+            raise FileNotFoundError(f"YOLO model not found: {YOLO_MODEL_PATH}")
+        import torch
+        from ultralytics.nn.tasks import DetectionModel
+        import torch.nn.modules.container
+        torch.serialization.add_safe_globals([DetectionModel, torch.nn.modules.container.Sequential])
+        from ultralytics import YOLO
+        _yolo = YOLO(str(YOLO_MODEL_PATH))
+        print(f"[OK] YOLO loaded from {YOLO_MODEL_PATH}")
+    return _yolo
+
+def get_classifier():
+    global _classifier
+    if _classifier is None:
+        if not CLASSIFIER_PATH.exists():
+            raise FileNotFoundError(f"Classifier not found: {CLASSIFIER_PATH}")
+        try:
+            _classifier = keras.models.load_model(CLASSIFIER_PATH, compile=False)
+        except TypeError as exc:
+            if CLASSIFIER_PATH.suffix.lower() == ".h5" and "quantization_config" in str(exc):
+                raise RuntimeError(
+                    "The H5 classifier was saved with metadata that this Keras runtime "
+                    "cannot deserialize. Use the bundled .keras model or set "
+                    "CLASSIFIER_MODEL=models/fruit_adulteration_final.keras."
+                ) from exc
+            raise
+        print(f"[OK] Classifier loaded from {CLASSIFIER_PATH}")
+    return _classifier
+
