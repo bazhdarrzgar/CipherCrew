@@ -378,4 +378,207 @@ export const BatchTable = ({ items, activeIndex, onSelectItem, onOverrideLabel, 
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
                       transition={{ duration: 0.15 }}
+                      className={`border-b border-black/5 dark:border-white/5 transition-colors ${isActive ? "bg-black/5 dark:bg-white/5" : "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]"} ${isRejected ? "opacity-40" : ""}`}
+                    >
+                      {/* No. */}
+                      <td className="px-5 py-3 text-black/50 dark:text-zinc-400 font-mono text-xs">{item.no}</td>
+
+                      {/* Thumbnail + ID */}
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-lg overflow-hidden bg-black/5 dark:bg-black/30 shrink-0 ring-2 transition-all ${isActive ? "ring-black dark:ring-white" : "ring-transparent"}`}>
+                            <img src={item.previewUrl} alt={item.fileName} className="w-full h-full object-cover" />
+                          </div>
+                          <span className="font-mono text-[10px] text-black/40 dark:text-zinc-500">{item.id}</span>
+                        </div>
+                      </td>
+
+                      {/* File Name */}
+                      <td className="px-5 py-3 text-black/70 dark:text-zinc-300 max-w-[160px]">
+                        <p className="truncate text-xs" title={item.fileName}>{item.fileName}</p>
+                      </td>
+
+                      {/* Fruit Name */}
+                      <td className="px-5 py-3 text-black dark:text-white font-semibold text-xs capitalize">
+                        {item.fruitName || item.yoloClass || "—"}
+                      </td>
+
+                      {/* Category Badge + Override */}
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${CATEGORY_STYLES[normalizeQualityLabel(effectiveLabel)] ?? CATEGORY_STYLES[""]}`}>
+                            {getDisplayQualityLabel(effectiveLabel) || "Detecting…"}
+                          </span>
+                          {item.manualLabel && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800/60">
+                              Override
+                            </span>
+                          )}
+                          {item.status === "completed" && (
+                            <select
+                              value={normalizeQualityLabel(effectiveLabel) || effectiveLabel}
+                              onChange={(e) => onOverrideLabel(originalIdx, e.target.value as QualityLabel)}
+                              className="text-[11px] bg-white/70 hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-black/10 dark:border-zinc-700 rounded-lg px-2 py-0.5 font-semibold text-black/70 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white cursor-pointer shadow-sm"
+                            >
+                              {CATEGORY_OPTIONS.map((cat) => (
+                                <option key={cat.value} value={cat.value}>{cat.label}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Confidence Score */}
+                      <td className="px-5 py-3">
+                        {item.status === "completed" ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 bg-black/10 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="h-full bg-black dark:bg-white rounded-full"
+                                style={{ width: `${item.classConf * 100}%` }}
+                              />
+                            </div>
+                            <span className="font-mono text-xs font-semibold text-black/80 dark:text-zinc-300">
+                              {(item.classConf * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-black/30 dark:text-zinc-600 font-mono">—</span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-1.5">
+                          {STATUS_ICON[item.status]}
+                          <span className="text-xs capitalize text-black/60 dark:text-zinc-400">{item.status}</span>
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-1.5">
+                          {item.status === "completed" && (
+                            <button
+                              onClick={() => onSelectItem(originalIdx)}
+                              title="View in Studio"
+                              className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-black/50 hover:text-black dark:text-zinc-400 dark:hover:text-white"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {item.status === "rejected" ? (
+                            <button
+                              onClick={() => onRestoreItem(originalIdx)}
+                              title="Restore"
+                              className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors text-emerald-500"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            item.status === "completed" && (
+                              <button
+                                onClick={() => onRejectItem(originalIdx)}
+                                title="Reject / Exclude"
+                                className="p-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                              </button>
+                            )
+                          )}
+                          {onRemoveItem && (
+                            <button
+                              onClick={() => onRemoveItem(originalIdx)}
+                              title="Remove fruit from dataset"
+                              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── Pagination Footer ── */}
+        <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-3 sm:py-3.5 border-t border-black/5 dark:border-white/10 bg-white/40 dark:bg-zinc-900/60 gap-3 sm:gap-4 text-xs">
+          {/* Item Range Info */}
+          <div className="text-black/60 dark:text-zinc-400 font-medium text-center sm:text-left text-[11px] sm:text-xs">
+            Showing <strong className="text-black dark:text-white font-semibold">{items.length > 0 ? startIndex + 1 : 0}</strong>–<strong className="text-black dark:text-white font-semibold">{endIndex}</strong> of <strong className="text-black dark:text-white font-semibold">{items.length}</strong> elements
+          </div>
+
+          {/* Navigation Controls: << < [pages] > >> */}
+          <div className="flex items-center gap-1 flex-wrap justify-center">
+            {/* First Page << */}
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage <= 1}
+              title="First page"
+              className="p-1.5 rounded-lg border border-black/10 dark:border-zinc-700 bg-white/70 hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black/70 dark:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
+
+            {/* Previous Page < */}
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              title="Previous page (<)"
+              className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-zinc-700 bg-white/70 hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white font-semibold disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Prev</span>
+            </button>
+
+            {/* Page number buttons */}
+            <div className="flex items-center gap-1 mx-0.5 sm:mx-1">
+              {getPageNumbers().map((p, i) =>
+                p === "..." ? (
+                  <span key={`dots-${i}`} className="px-1.5 text-black/40 dark:text-zinc-500 font-bold text-xs">...</span>
+                ) : (
+                  <button
+                    key={`page-${p}`}
+                    onClick={() => setCurrentPage(Number(p))}
+                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg text-xs font-bold transition-all ${
+                      currentPage === p
+                        ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
+                        : "bg-white/70 hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black/70 dark:text-zinc-300 border border-black/5 dark:border-zinc-700"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+            </div>
+
+            {/* Next Page > */}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              title="Next page (>)"
+              className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-zinc-700 bg-white/70 hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white font-semibold disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+
+            {/* Last Page >> */}
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage >= totalPages}
+              title="Last page"
+              className="p-1.5 rounded-lg border border-black/10 dark:border-zinc-700 bg-white/70 hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black/70 dark:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
 };
