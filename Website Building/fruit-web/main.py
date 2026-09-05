@@ -560,3 +560,5 @@ async def detect(
 
 # ───────────────────────── History & SQLite Endpoints ─────────────────────────
 
+
+# DB persistence integration
