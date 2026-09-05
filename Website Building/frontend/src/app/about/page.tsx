@@ -38,6 +38,51 @@ export default function AboutPage() {
         <div className="max-w-3xl mt-8 sm:mt-12 space-y-4 sm:space-y-6 text-sm sm:text-base md:text-lg leading-relaxed text-[#555555] dark:text-zinc-300 font-inter animate-fade-rise-delay text-left">
           <p>
             CipherCrew® was developed to solve a crucial agricultural challenge: <strong className="text-black dark:text-white">Produce Quality Grading</strong>. Farmers and sellers need a simple, reliable method of sorting fruit produce according to visible quality before sale, replacing subjective and time-consuming manual sorting.
+          </p>
+          <p>
+            Our platform harnesses edge AI computer vision—<strong className="text-black dark:text-white">specifically fine-tuned YOLO bounding configurations stacked atop deep MobileNetV2 classification fibers</strong>—to detect produce boundaries, evaluate visible surface features, and grade uploaded produce into clearly defined categories such as <span className="italic">Good</span>, <span className="italic">Acceptable</span>, or <span className="italic">Damaged</span> accompanied by calibrated confidence scores.
+          </p>
+          <p>
+            Equipped with rejected-image handling to safeguard against unrelated or unusable uploads, the system provides instant batch and single-item grading summaries for sellers and distributors.
+          </p>
+          <div className="p-3.5 sm:p-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400">
+            <span className="font-semibold text-black dark:text-white">Notice &amp; Scope: </span>
+            The system judges visible appearance and exterior condition only. It does not certify internal freshness, taste, chemical safety, or fitness for consumption.
+          </div>
+        </div>
+
+        {/* Creators / Built By Section */}
+        <section className="mt-16 sm:mt-24 w-full max-w-5xl animate-fade-rise-delay">
+          <div className="flex flex-col items-center mb-8 sm:mb-12">
+            <span className="text-[11px] sm:text-xs uppercase tracking-widest font-semibold px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-black/70 dark:text-zinc-300 border border-black/10 dark:border-white/10 font-inter mb-3 sm:mb-4">
+              The Creators
+            </span>
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-instrument font-normal text-black dark:text-white tracking-tight">
+              Created by the <span className="italic text-[#6F6F6F] dark:text-zinc-400">Team</span>
+            </h2>
+            <p className="text-xs sm:text-base text-gray-500 dark:text-zinc-400 font-inter mt-2 sm:mt-3 max-w-lg px-2">
+              The builders and minds who conceptualized and developed this project.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-left">
+            {[
+              {
+                name: "Bashdar Rzgar",
+                initials: "BR",
+                role: "Project Creator",
+              },
+              {
+                name: "Nairiti Dutta",
+                initials: "ND",
+                role: "Project Creator",
+              },
+              {
+                name: "Manashita Baruah",
+                initials: "MB",
+                role: "Project Creator",
+              },
+              {
 </div>
 </div>
 );
