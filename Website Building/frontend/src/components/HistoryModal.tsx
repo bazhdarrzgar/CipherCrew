@@ -298,4 +298,104 @@ export const HistoryModal = ({ isOpen, onClose, onLoadRecord }: HistoryModalProp
                 <button
                   onClick={() => handleExport("csv")}
                   disabled={records.length === 0}
+                  className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] font-bold bg-white/70 hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white border border-black/10 dark:border-zinc-700 rounded-lg sm:rounded-xl transition-all disabled:opacity-40"
+                >
+                  <FileText className="w-3 h-3" /> CSV
+                </button>
+                <button
+                  onClick={() => handleExport("json")}
+                  disabled={records.length === 0}
+                  className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] font-bold bg-white/70 hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white border border-black/10 dark:border-zinc-700 rounded-lg sm:rounded-xl transition-all disabled:opacity-40"
+                >
+                  <FileJson className="w-3 h-3" /> JSON
+                </button>
+                <button
+                  onClick={() => handleExport("pdf")}
+                  disabled={records.length === 0}
+                  className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] font-bold bg-white/70 hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white border border-black/10 dark:border-zinc-700 rounded-lg sm:rounded-xl transition-all disabled:opacity-40"
+                >
+                  <Download className="w-3 h-3" /> PDF
+                </button>
+                <button
+                  onClick={handleClearAll}
+                  disabled={records.length === 0}
+                  title="Clear all database history"
+                  className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/60 border border-red-200 dark:border-red-900/50 rounded-lg sm:rounded-xl transition-all disabled:opacity-40"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Table Content ── */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 scrollbar-thin">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-zinc-500">
+                <RefreshCw className="w-7 h-7 sm:w-8 sm:h-8 animate-spin mb-3 text-black dark:text-white" />
+                <p className="text-xs sm:text-sm font-medium">Querying local SQLite database...</p>
+              </div>
+            ) : records.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-zinc-500">
+                <Database className="w-10 h-10 stroke-1 mb-2 text-gray-300 dark:text-zinc-600" />
+                <p className="text-base font-semibold text-gray-600 dark:text-zinc-300 font-instrument">No Detection History Found</p>
+                <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1 max-w-sm text-center px-4">
+                  Scanned images are automatically stored into detections.db. Upload images to begin populating your local database.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto scrollbar-thin">
+                <table className="w-full text-left text-xs min-w-[640px]">
+                  <thead>
+                    <tr className="border-b border-black/10 dark:border-white/10 text-gray-500 dark:text-zinc-400 uppercase tracking-wider text-[10px]">
+                      <th className="pb-3 px-3">ID</th>
+                      <th className="pb-3 px-3">Thumbnail</th>
+                      <th className="pb-3 px-3">File Name</th>
+                      <th className="pb-3 px-3">Fruit</th>
+                      <th className="pb-3 px-3">Classification</th>
+                      <th className="pb-3 px-3">Confidence</th>
+                      <th className="pb-3 px-3">Date Saved</th>
+                      <th className="pb-3 px-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/5 dark:divide-white/5">
+                    {records.map((r) => {
+                      const rawLabel = r.effective_label || r.predicted_label;
+                      const normLabel = normalizeHistoryLabel(rawLabel);
+                      const displayLabel = getDisplayHistoryLabel(rawLabel);
+                      const isOverridden = Boolean(r.manual_label);
+                      const isDeleting = deletingId === r.id;
+
+                      return (
+                        <tr 
+                          key={r.id} 
+                          className={`hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors ${r.is_rejected ? "opacity-50" : ""}`}
+                        >
+                          <td className="py-3 px-3 font-mono font-bold text-gray-400 dark:text-zinc-500">
+                            #{r.id}
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="w-10 h-10 rounded-xl overflow-hidden bg-black/5 dark:bg-black/30 border border-black/10 dark:border-zinc-700 flex items-center justify-center shrink-0">
+                              {r.annotated_image ? (
+                                <img
+                                  src={`data:image/jpeg;base64,${r.annotated_image}`}
+                                  alt={r.filename}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Database className="w-4 h-4 text-gray-300 dark:text-zinc-600" />
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 font-medium text-black dark:text-zinc-100 truncate max-w-[140px] sm:max-w-[180px]">
+                            {r.filename}
+                          </td>
+                          <td className="py-3 px-3 text-gray-600 dark:text-zinc-300 font-semibold capitalize">
+                            {r.fruit_type || "Unknown"}
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${CATEGORY_STYLES[normLabel] || CATEGORY_STYLES[""]}`}>
+                                {displayLabel}
+                              </span>
 };
