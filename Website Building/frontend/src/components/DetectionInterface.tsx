@@ -778,4 +778,114 @@ export const DetectionInterface = () => {
         onRemoveItem={handleRemoveItem}
       />
 
+      <HistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onLoadRecord={handleLoadHistoryRecord}
+      />
+
+      <CameraModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={(file) => {
+          addFiles([file]);
+          setIsCameraOpen(false);
+        }}
+      />
+    </div>
+  );
+};
+
+// ─── Clock Icon (inline for pending state) ────────────────────────────────────
+
+const Clock = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <circle cx="12" cy="12" r="9" />
+    <path strokeLinecap="round" d="M12 7v5l3 3" />
+  </svg>
+);
+
+// ─── Processing View ──────────────────────────────────────────────────────────
+
+const ProcessingView = ({ preview, fileName }: { preview: string; fileName: string }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="flex flex-col items-center justify-center gap-6 py-12 w-full bg-white/50 dark:bg-zinc-900/70 backdrop-blur-3xl rounded-3xl border border-white/40 dark:border-zinc-800 shadow-2xl p-8"
+  >
+    <div className="relative overflow-hidden rounded-xl bg-black/5 dark:bg-black/40 w-full max-w-xs aspect-square flex items-center justify-center shadow-inner">
+      {preview && <img src={preview} alt={fileName} className="absolute inset-0 w-full h-full object-cover opacity-80" />}
+      <motion.div
+        initial={{ top: "-10%" }}
+        animate={{ top: "110%" }}
+        transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+        className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#5ec522] to-transparent shadow-[0_0_20px_#5ec522] z-10"
+      />
+    </div>
+    <div className="flex flex-col items-center text-center">
+      <p className="text-2xl font-bold animate-pulse text-black dark:text-white font-instrument tracking-tight">Extracting Fruit Features…</p>
+      <p className="text-sm text-gray-500 dark:text-zinc-400 font-inter mt-1">Running YOLOv8 & MobileNet Deep Classification</p>
+      <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2 truncate max-w-xs">{fileName}</p>
+    </div>
+  </motion.div>
+);
+
+// ─── Result View ──────────────────────────────────────────────────────────────
+
+const ResultView = ({
+  result,
+  activeItem,
+  isRejected,
+  onReject,
+  onRestore,
+  onRemoveDetection,
+}: {
+  result: ApiResponse;
+  activeItem?: BatchItem | null;
+  isRejected: boolean;
+  onReject: () => void;
+  onRestore: () => void;
+  onRemoveDetection: (detIndex: number) => void;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 30 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`w-full flex flex-col gap-8 sm:gap-12 ${isRejected ? "opacity-60 pointer-events-none" : ""}`}
+  >
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
+      {/* Main Annotated Image */}
+      <div className="flex-[3] w-full flex flex-col gap-4">
+        <div className="bg-white/30 dark:bg-zinc-900/60 backdrop-blur-3xl p-2.5 sm:p-3 rounded-2xl sm:rounded-3xl shadow-[0_12px_40px_rgb(0,0,0,0.08)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)] border border-white/60 dark:border-zinc-800">
+          <div className="flex items-center justify-between px-2 mb-2.5 sm:mb-3">
+            <h2 className="text-lg sm:text-xl font-bold font-instrument text-black/80 dark:text-zinc-200">Analysis Result</h2>
+            {isRejected ? (
+              <button onClick={onRestore} className="text-xs text-emerald-600 dark:text-emerald-400 font-bold hover:underline">Restore</button>
+            ) : (
+              <button onClick={onReject} className="text-xs text-red-400 dark:text-red-400 font-bold hover:underline">Reject Result</button>
+            )}
+          </div>
+          <div className="relative w-full rounded-xl sm:rounded-2xl overflow-hidden bg-black/5 dark:bg-black/40">
+            <img
+              src={`data:image/jpeg;base64,${result.annotated_image}`}
+              className="w-full h-auto block"
+              alt="Analyzed fruit result"
+            />
+          </div>
+          {result.used_fallback && (
+            <p className="px-2 pt-2.5 sm:pt-3 text-xs text-black/50 dark:text-zinc-400">
+              The detector did not isolate a fruit box, so the classifier analyzed the full uploaded image.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Detections List */}
+      <div className="flex-[2] w-full flex flex-col gap-4 sm:gap-6">
+        {result.overall && (
+          <div className="bg-white/40 dark:bg-zinc-900/70 backdrop-blur-2xl border border-white/60 dark:border-zinc-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl shadow-black/5 dark:shadow-black/30">
+            <p className="text-[10px] sm:text-xs uppercase font-bold tracking-widest text-black/50 dark:text-zinc-400 mb-1 sm:mb-2">Overall Result</p>
+            <h2 className="text-3xl sm:text-4xl font-bold font-instrument text-black/90 dark:text-zinc-100">
+              {result.overall.label.toLowerCase() === "fresh" ? "Good" :
+               result.overall.label.toLowerCase() === "rotten" ? "Bad" :
+               result.overall.label.toLowerCase() === "adulterant" || result.overall.label.toLowerCase() === "adulterated" ? "Unknown" :
 };
