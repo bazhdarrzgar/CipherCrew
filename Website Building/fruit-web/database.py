@@ -189,3 +189,82 @@ def get_history(
         conn.close()
 
 
+def get_detection(record_id: int) -> Optional[Dict[str, Any]]:
+    """Retrieves a single detection by ID including the full image and metadata."""
+    conn = get_connection()
+    try:
+        row = conn.execute("""
+            SELECT id, batch_id, filename, fruit_type, predicted_label, 
+                   confidence, manual_label, is_rejected, created_at, 
+                   annotated_image, metadata_json
+            FROM detections
+            WHERE id = ?
+        """, (record_id,)).fetchone()
+
+        if not row:
+            return None
+
+        meta = {}
+        if row["metadata_json"]:
+            try:
+                meta = json.loads(row["metadata_json"])
+            except Exception:
+                pass
+
+        return {
+            "id": row["id"],
+            "batch_id": row["batch_id"],
+            "filename": row["filename"],
+            "fruit_type": row["fruit_type"],
+            "predicted_label": row["predicted_label"],
+            "confidence": row["confidence"],
+            "manual_label": row["manual_label"],
+            "effective_label": row["manual_label"] or row["predicted_label"],
+            "is_rejected": bool(row["is_rejected"]),
+            "created_at": row["created_at"],
+            "annotated_image": row["annotated_image"],
+            "metadata": meta,
+        }
+    finally:
+        conn.close()
+
+
+def get_db_stats() -> Dict[str, Any]:
+    """Computes global aggregate metrics from the SQLite database."""
+    conn = get_connection()
+    try:
+        total = conn.execute("SELECT COUNT(*) as c FROM detections").fetchone()["c"]
+        good = conn.execute("""
+            SELECT COUNT(*) as c FROM detections 
+            WHERE LOWER(COALESCE(manual_label, predicted_label)) IN ('fresh', 'good') AND is_rejected = 0
+        """).fetchone()["c"]
+        bad = conn.execute("""
+            SELECT COUNT(*) as c FROM detections 
+            WHERE LOWER(COALESCE(manual_label, predicted_label)) IN ('rotten', 'bad') AND is_rejected = 0
+        """).fetchone()["c"]
+        unknown = conn.execute("""
+            SELECT COUNT(*) as c FROM detections 
+            WHERE LOWER(COALESCE(manual_label, predicted_label)) IN ('adulterated', 'adulterant', 'unknown') AND is_rejected = 0
+        """).fetchone()["c"]
+        overridden = conn.execute("""
+            SELECT COUNT(*) as c FROM detections 
+            WHERE manual_label IS NOT NULL AND is_rejected = 0
+        """).fetchone()["c"]
+        rejected = conn.execute("""
+            SELECT COUNT(*) as c FROM detections 
+            WHERE is_rejected = 1
+        """).fetchone()["c"]
+
+        return {
+            "total": total,
+            "good": good,
+            "bad": bad,
+            "unknown": unknown,
+            "fresh": good,
+            "rotten": bad,
+            "adulterated": unknown,
+            "overridden": overridden,
+            "rejected": rejected
+        }
+    finally:
+        conn.close()
