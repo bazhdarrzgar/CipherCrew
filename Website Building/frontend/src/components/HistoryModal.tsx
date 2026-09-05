@@ -398,4 +398,74 @@ export const HistoryModal = ({ isOpen, onClose, onLoadRecord }: HistoryModalProp
                               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${CATEGORY_STYLES[normLabel] || CATEGORY_STYLES[""]}`}>
                                 {displayLabel}
                               </span>
+                              {isOverridden && (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800/60">
+                                  Override
+                                </span>
+                              )}
+                              {r.is_rejected && (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-red-100 text-red-700 border border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800/60">
+                                  Rejected
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 font-mono font-bold text-black dark:text-zinc-200">
+                            {(r.confidence * 100).toFixed(1)}%
+                          </td>
+                          <td className="py-3 px-3 text-gray-400 dark:text-zinc-400 text-[11px] whitespace-nowrap">
+                            {new Date(r.created_at).toLocaleString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => {
+                                  onLoadRecord(r);
+                                  onClose();
+                                }}
+                                title="Load this scan into the active viewer"
+                                className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-xs font-semibold bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-zinc-200 rounded-xl transition-all shadow-sm hover:scale-105 active:scale-95"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> Load
+                              </button>
+                              <button
+                                onClick={(e) => handleDeleteRecord(r.id, e)}
+                                disabled={isDeleting}
+                                title="Delete from SQLite database"
+                                className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/30 text-red-500 dark:text-red-400 rounded-lg transition-colors disabled:opacity-40"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* ── Modal Footer ── */}
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-3.5 border-t border-black/10 dark:border-white/10 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md text-xs text-gray-500 dark:text-zinc-400 shrink-0 z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_12px_rgba(0,0,0,0.3)]">
+            <span className="font-medium text-black/70 dark:text-zinc-300">Showing {records.length} saved records</span>
+            <button
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-5 py-2 font-bold bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-zinc-200 rounded-xl transition-all shadow-md hover:scale-105 active:scale-95 cursor-pointer text-xs sm:text-sm"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Close</span>
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
 };
+
