@@ -648,4 +648,134 @@ export const DetectionInterface = () => {
           <button
             onClick={() => setIsHistoryOpen(true)}
             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-white/60 hover:bg-white dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 backdrop-blur-xl border border-white/60 dark:border-zinc-700 rounded-xl text-xs sm:text-sm font-bold text-black dark:text-white shadow-sm transition-all hover:scale-105 active:scale-95"
+          >
+            <Database className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Database</span>
+            {dbCount !== null && dbCount > 0 && (
+              <span className="px-1.5 py-0.5 text-[9px] sm:text-[10px] bg-black text-white dark:bg-white dark:text-black rounded-full font-mono">
+                {dbCount}
+              </span>
+            )}
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*,.jfif,.avif,.heic,.heif,.webp"
+            multiple
+            className="hidden"
+          />
+        </div>
+        <button
+          onClick={handleClearAll}
+          className="self-end sm:self-auto flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all"
+        >
+          <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span>Clear All</span>
+        </button>
+      </div>
+
+      {/* ── Thumbnail Strip ── */}
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin touch-pan-x -mx-1 px-1">
+        {items.map((item, idx) => (
+          <button
+            key={item.id}
+            onClick={() => item.status !== "pending" && setActiveIndex(idx)}
+            title={item.fileName}
+            className={`relative shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 transition-all ${
+              idx === activeIndex
+                ? "border-black dark:border-white scale-105 shadow-lg"
+                : "border-transparent opacity-70 hover:opacity-100 hover:border-black/30 dark:hover:border-white/40"
+            } ${item.status === "pending" ? "cursor-not-allowed" : ""}`}
+          >
+            <img src={item.previewUrl} alt={item.fileName} className="w-full h-full object-cover" />
+            {item.status === "processing" && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-spin" />
+              </div>
+            )}
+            {item.status === "rejected" && (
+              <div className="absolute inset-0 bg-red-500/30" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Active Result Viewer ── */}
+      <AnimatePresence mode="wait">
+        {activeItem && (
+          <motion.div
+            key={activeItem.id}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.3 }}
+          >
+            {activeItem.status === "processing" && (
+              <ProcessingView preview={activeItem.previewUrl} fileName={activeItem.fileName} />
+            )}
+
+            {activeItem.status === "pending" && (
+              <div className="w-full bg-white/30 dark:bg-zinc-900/50 backdrop-blur-2xl border border-white/60 dark:border-zinc-800 rounded-3xl p-12 flex flex-col items-center justify-center gap-3 text-black/50 dark:text-zinc-400">
+                <Clock className="w-10 h-10" />
+                <p className="font-instrument text-lg">Queued — waiting for turn</p>
+                <p className="text-sm">{activeItem.fileName}</p>
+              </div>
+            )}
+
+            {activeItem.status === "failed" && (
+              <div className="w-full bg-red-50/80 dark:bg-red-950/40 backdrop-blur-xl border border-red-200 dark:border-red-900/60 rounded-3xl p-10 flex flex-col items-center gap-3 text-center">
+                <p className="text-red-700 dark:text-red-300 font-bold font-instrument text-2xl">Analysis Failed</p>
+                <p className="text-red-600 dark:text-red-400 text-sm">{activeItem.error}</p>
+              </div>
+            )}
+
+            {(activeItem.status === "completed" || activeItem.status === "rejected") && activeResult && (
+              <ResultView
+                result={activeResult}
+                activeItem={activeItem}
+                isRejected={activeItem.status === "rejected"}
+                onReject={() => handleRejectItem(activeIndex)}
+                onRestore={() => handleRestoreItem(activeIndex)}
+                onRemoveDetection={handleRemoveDetection}
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Prev / Next Navigation ── */}
+      {items.length > 1 && (
+        <div className="flex justify-center items-center gap-4">
+          <button
+            onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
+            disabled={!canNavigatePrev}
+            className="p-2 rounded-xl bg-white/60 hover:bg-white dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 border border-white/60 dark:border-zinc-700 text-black dark:text-white shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <span className="text-sm text-black/60 dark:text-zinc-400 font-mono">
+            {activeIndex + 1} / {items.length}
+          </span>
+          <button
+            onClick={() => setActiveIndex((i) => Math.min(items.length - 1, i + 1))}
+            disabled={!canNavigateNext}
+            className="p-2 rounded-xl bg-white/60 hover:bg-white dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 border border-white/60 dark:border-zinc-700 text-black dark:text-white shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Batch Results Table ── */}
+      <BatchTable
+        items={items}
+        activeIndex={activeIndex}
+        onSelectItem={setActiveIndex}
+        onOverrideLabel={handleOverrideLabel}
+        onRejectItem={handleRejectItem}
+        onRestoreItem={handleRestoreItem}
+        onRemoveItem={handleRemoveItem}
+      />
+
 };
