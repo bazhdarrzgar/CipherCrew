@@ -1,13 +1,60 @@
+@import '../styles/fonts.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .animate-fade-rise {
+    animation: fade-rise 0.8s ease-out forwards;
+  }
+  .animate-fade-rise-delay {
+    animation: fade-rise 0.8s ease-out 0.2s forwards;
+    opacity: 0;
+  }
+  .animate-fade-rise-delay-2 {
+    animation: fade-rise 0.8s ease-out 0.4s forwards;
+    opacity: 0;
+  }
+}
+
+@keyframes fade-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 :root {
   --color-primary: #000000;
   --color-background: #ffffff;
+  --color-good: #5ec522;
+  --color-bad: #ef4444;
+  --color-unknown: #f59e0b;
+  --color-fresh: #5ec522;
+  --color-rotten: #ef4444;
+  --color-adulterated: #f59e0b;
+}
+
+.dark {
+  --color-primary: #f8fafc;
+  --color-background: #090d16;
+  --color-good: #4ade80;
+  --color-bad: #f87171;
+  --color-unknown: #fbbf24;
+  --color-fresh: #4ade80;
+  --color-rotten: #f87171;
+  --color-adulterated: #fbbf24;
 }
 
 body {
+  background-color: var(--color-background);
   color: var(--color-primary);
-  background: var(--color-background);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+.dark body {
+  background-color: var(--color-background);
