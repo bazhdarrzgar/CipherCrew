@@ -560,5 +560,26 @@ async def detect(
 
 # ───────────────────────── History & SQLite Endpoints ─────────────────────────
 
+@app.get("/history")
+async def get_history_endpoint(
+    limit: int = 50,
+    offset: int = 0,
+    label: Optional[str] = None,
+    fruit: Optional[str] = None,
+    search: Optional[str] = None,
+    include_image: bool = False,
+):
+    """Retrieve paginated detection history saved in SQLite."""
+    try:
+        return database.get_history(
+            limit=limit,
+            offset=offset,
+            label_filter=label,
+            fruit_filter=fruit,
+            search=search,
+            include_image=include_image
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-# DB persistence integration
+
