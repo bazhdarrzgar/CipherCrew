@@ -428,4 +428,94 @@ export const DetectionInterface = () => {
       setActiveIndex(updated.length - newItemsToLoad.length);
       return updated;
     });
+  };
+
+  // ── Remove Item / Remove Detected Fruit ──
+  const handleRemoveItem = useCallback((index: number) => {
+    setItems((prev) => {
+      const targetItem = prev[index];
+      if (!targetItem) return prev;
+
+      const targetParentId = targetItem.parentImageId || targetItem.id;
+      const targetDetIdx = targetItem.detectionIndex;
+
+      // Remove the target item from list
+      const remaining = prev.filter((_, i) => i !== index);
+
+      // If target was part of a multi-fruit detection, update sibling items and their _result
+      const updated = remaining.map((it) => {
+        const itParent = it.parentImageId || it.id;
+        if (itParent === targetParentId && targetDetIdx !== undefined && it.detectionIndex !== undefined) {
+          const currentResult = (it as BatchItem & { _result?: ApiResponse })._result;
+          let newResult = currentResult;
+          if (currentResult?.detections) {
+            const newDets = currentResult.detections.filter((_, dI) => dI !== targetDetIdx);
+            newResult = {
+              ...currentResult,
+              detections: newDets,
+              total: newDets.length,
+            };
+          }
+          const newDetIdx = it.detectionIndex > targetDetIdx ? it.detectionIndex - 1 : it.detectionIndex;
+          return {
+            ...it,
+            detectionIndex: newDetIdx,
+            ...(newResult ? { _result: newResult } : {}),
+          };
+        }
+        return it;
+      });
+
+      return updated.map((it, idx) => ({ ...it, no: idx + 1 }));
+    });
+
+    setActiveIndex((prev) => {
+      if (items.length <= 1) return 0;
+      if (prev >= index && prev > 0) return prev - 1;
+      return prev;
+    });
+  }, [items.length]);
+
+  const handleRemoveDetection = useCallback((detIndex: number) => {
+    if (!activeItem) return;
+    const targetParentId = activeItem.parentImageId || activeItem.id;
+
+    // Find the item corresponding to this detection in the items list
+    const itemIndex = items.findIndex(
+      (it) => (it.parentImageId || it.id) === targetParentId && it.detectionIndex === detIndex
+    );
+
+    if (itemIndex !== -1) {
+      handleRemoveItem(itemIndex);
+    } else {
+      handleRemoveItem(activeIndex);
+    }
+  }, [activeItem, activeIndex, items, handleRemoveItem]);
+
+  const handleClearAll = () => {
+    items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    setItems([]);
+    setActiveIndex(0);
+    _idCounter = 0;
+  };
+
+  const pendingCount = items.filter((i) => i.status === "pending").length;
+  const processingItem = items.find((i) => i.status === "processing");
+  const processingIdx = items.findIndex((i) => i.status === "processing");
+  const completedCount = items.filter((i) => i.status === "completed" || i.status === "rejected").length;
+  const totalCount = items.length;
+
+  const canNavigatePrev = activeIndex > 0;
+  const canNavigateNext = activeIndex < items.length - 1;
+
+  // ─── Empty State: Upload Drop Zone ────────────────────────────────────────
+  if (items.length === 0) {
+    return (
+      <div className="w-full flex flex-col items-center px-2">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
 };
