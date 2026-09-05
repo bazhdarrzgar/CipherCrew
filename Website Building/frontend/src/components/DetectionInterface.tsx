@@ -518,4 +518,134 @@ export const DetectionInterface = () => {
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`w-full max-w-2xl border-2 border-dashed rounded-2xl sm:rounded-3xl p-6 sm:p-10 md:p-12 flex flex-col items-center justify-center cursor-pointer transition-all backdrop-blur-3xl shadow-xl ${
+            isDragging
+              ? "border-black/40 bg-black/5 dark:border-white/40 dark:bg-white/5 scale-[1.01]"
+              : "border-white/60 bg-white/20 dark:border-zinc-800 dark:bg-zinc-900/40 hover:bg-white/30 dark:hover:bg-zinc-900/60"
+          }`}
+        >
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*,.jfif,.avif,.heic,.heif,.webp"
+            multiple
+            className="hidden"
+          />
+          <div className="bg-white/40 dark:bg-zinc-800/80 backdrop-blur-xl border border-white/60 dark:border-zinc-700/80 p-4 sm:p-6 rounded-full mb-4 sm:mb-6 shadow-inner">
+            <Images className="w-8 h-8 sm:w-12 sm:h-12 text-black/70 dark:text-zinc-200" />
+          </div>
+          <h3 className="text-xl sm:text-2xl font-bold mb-1.5 sm:mb-2 font-instrument tracking-tight text-black dark:text-white text-center">
+            Upload Fruit Images
+          </h3>
+          <p className="text-black/60 dark:text-zinc-400 text-xs sm:text-sm font-medium text-center max-w-sm px-2">
+            Drag & drop, click to select images, or capture live using your device camera.
+          </p>
+        </motion.div>
+
+        {/* Action Buttons in Empty State */}
+        <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3 mt-6 w-full max-w-md sm:max-w-none sm:w-auto justify-center">
+          <button
+            onClick={() => setIsCameraOpen(true)}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl sm:rounded-2xl text-sm font-bold shadow-md shadow-emerald-950/20 transition-all hover:scale-105 active:scale-95"
+          >
+            <Camera className="w-4 h-4" />
+            <span>Open Camera</span>
+          </button>
+          <button
+            onClick={() => setIsHistoryOpen(true)}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-white/60 hover:bg-white dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 backdrop-blur-xl border border-white/60 dark:border-zinc-700 rounded-xl sm:rounded-2xl text-xs font-bold text-black dark:text-white shadow-sm transition-all hover:scale-105 active:scale-95"
+          >
+            <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>View Database History</span>
+            {dbCount !== null && dbCount > 0 && (
+              <span className="px-2 py-0.5 text-[10px] bg-black text-white dark:bg-white dark:text-black rounded-full font-mono font-semibold">
+                {dbCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {globalError && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-2xl mt-6 bg-red-50/80 dark:bg-red-950/40 backdrop-blur-xl border border-red-200 dark:border-red-900/60 p-4 rounded-2xl text-center"
+          >
+            <p className="text-red-600 dark:text-red-300 text-sm">{globalError}</p>
+          </motion.div>
+        )}
+
+        <HistoryModal
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          onLoadRecord={handleLoadHistoryRecord}
+        />
+
+        <CameraModal
+          isOpen={isCameraOpen}
+          onClose={() => setIsCameraOpen(false)}
+          onCapture={(file) => {
+            addFiles([file]);
+            setIsCameraOpen(false);
+          }}
+        />
+      </div>
+    );
+  }
+
+  // ─── Queue + Results View ──────────────────────────────────────────────────
+  return (
+    <div className="w-full flex flex-col gap-4 sm:gap-6">
+
+      {/* ── Queue Progress Bar (shown while processing) ── */}
+      <AnimatePresence>
+        {(isQueueRunning || pendingCount > 0) && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="w-full bg-white/50 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/60 dark:border-zinc-800 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-4 shadow-lg"
+          >
+            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-black/60 dark:text-zinc-300 animate-spin shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-semibold text-black/80 dark:text-zinc-200 font-instrument truncate">
+                {isQueueRunning
+                  ? `Processing ${processingIdx + 1} of ${totalCount}: ${processingItem?.fileName ?? "..."}`
+                  : `${pendingCount} image${pendingCount > 1 ? "s" : ""} queued…`}
+              </p>
+              <div className="mt-1.5 sm:mt-2 bg-black/10 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
+                <motion.div
+                  animate={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
+                  transition={{ duration: 0.5 }}
+                  className="h-full bg-black dark:bg-white rounded-full"
+                />
+              </div>
+            </div>
+            <span className="text-[11px] sm:text-xs text-black/50 dark:text-zinc-400 font-mono shrink-0">{completedCount}/{totalCount}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Header Row: Add More / Camera / Database History / Clear All ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-white/60 hover:bg-white dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 backdrop-blur-xl border border-white/60 dark:border-zinc-700 rounded-xl text-xs sm:text-sm font-bold text-black dark:text-white shadow-sm transition-all hover:scale-105 active:scale-95"
+          >
+            <UploadCloud className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Add Images</span>
+          </button>
+          <button
+            onClick={() => setIsCameraOpen(true)}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all hover:scale-105 active:scale-95"
+          >
+            <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Camera</span>
+          </button>
+          <button
+            onClick={() => setIsHistoryOpen(true)}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-white/60 hover:bg-white dark:bg-zinc-800/80 dark:hover:bg-zinc-700/80 backdrop-blur-xl border border-white/60 dark:border-zinc-700 rounded-xl text-xs sm:text-sm font-bold text-black dark:text-white shadow-sm transition-all hover:scale-105 active:scale-95"
 };
