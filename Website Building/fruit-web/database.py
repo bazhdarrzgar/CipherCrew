@@ -229,6 +229,65 @@ def get_detection(record_id: int) -> Optional[Dict[str, Any]]:
         conn.close()
 
 
+def update_detection(
+    record_id: int, 
+    manual_label: Optional[str] = None, 
+    is_rejected: Optional[bool] = None
+) -> Optional[Dict[str, Any]]:
+    """Updates manual override label or rejected state for a record."""
+    conn = get_connection()
+    try:
+        updates = []
+        params = []
+
+        if manual_label is not None:
+            val = None if manual_label.lower() in ("", "none", "null") else manual_label.lower()
+            updates.append("manual_label = ?")
+            params.append(val)
+
+        if is_rejected is not None:
+            updates.append("is_rejected = ?")
+            params.append(1 if is_rejected else 0)
+
+        if not updates:
+            return get_detection(record_id)
+
+        params.append(record_id)
+        with conn:
+            conn.execute(f"""
+                UPDATE detections
+                SET {', '.join(updates)}
+                WHERE id = ?
+            """, params)
+
+        return get_detection(record_id)
+    finally:
+        conn.close()
+
+
+def delete_detection(record_id: int) -> bool:
+    """Deletes a detection record by ID."""
+    conn = get_connection()
+    try:
+        with conn:
+            cursor = conn.execute("DELETE FROM detections WHERE id = ?", (record_id,))
+            return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
+def clear_history() -> int:
+    """Deletes all records from the detections table and resets auto-increment."""
+    conn = get_connection()
+    try:
+        with conn:
+            cursor = conn.execute("DELETE FROM detections;")
+            conn.execute("DELETE FROM sqlite_sequence WHERE name='detections';")
+            return cursor.rowcount
+    finally:
+        conn.close()
+
+
 def get_db_stats() -> Dict[str, Any]:
     """Computes global aggregate metrics from the SQLite database."""
     conn = get_connection()
