@@ -43,5 +43,47 @@ export const InfoSections = () => {
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-};
-export default InfoSections;
+              className="bg-white/10 border border-white/20 p-10 rounded-3xl backdrop-blur-md"
+            >
+              <h3 className="text-3xl font-bold mb-4 font-goothif">YOLO Object Detection</h3>
+              <p className="text-gray-300 mb-6 text-lg">
+                YOLO rapidly scans the image, identifying multiple fruits in a single pass. It accurately draws bounding boxes around apples, bananas, and other produce, cropping them for further analysis.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-center text-gray-200"><CheckCircle2 className="w-5 h-5 mr-3 text-green-400"/> Micro-second inference times</li>
+                <li className="flex items-center text-gray-200"><CheckCircle2 className="w-5 h-5 mr-3 text-green-400"/> Robust multi-object recognition</li>
+              </ul>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="bg-white/10 border border-white/20 p-10 rounded-3xl backdrop-blur-md"
+            >
+              <h3 className="text-3xl font-bold mb-4 font-goothif">MobileNetV2 Classification</h3>
+              <p className="text-gray-300 mb-6 text-lg">
+                Each detected crop is passed to our fine-tuned MobileNetV2 classifier. It extracts deep visual features to distinguish between natural textures, rotting patterns, and chemical adulterants.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-center text-gray-200"><CheckCircle2 className="w-5 h-5 mr-3 text-green-400"/> High accuracy on adulterant patterns</li>
+                <li className="flex items-center text-gray-200"><CheckCircle2 className="w-5 h-5 mr-3 text-green-400"/> Grad-CAM Explainability visualizer</li>
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases & Contact */}
+      <section className="w-full max-w-6xl px-6 flex flex-col items-center text-center pb-24">
+        <h2 className="text-4xl md:text-5xl font-black font-goothif mb-12">Who Is This For?</h2>
+        <p className="text-xl text-gray-600 max-w-3xl mb-12 text-balance">
+          Whether you are a health-conscious consumer, a grocery store QA inspector, or a supply-chain distributor, our tool ensures your fruits are safe, fresh, and strictly organic.
+        </p>
+        <button className="px-8 py-4 bg-black text-white rounded-full font-bold text-lg hover:scale-105 active:scale-95 transition-transform shadow-xl shadow-black/20">
+          Contact Us for Enterprise Integration
+        </button>
+      </section>
+    </div>
+  );
+}
