@@ -601,3 +601,20 @@ async def get_single_history_endpoint(record_id: int):
     return record
 
 
+@app.patch("/history/{record_id}")
+async def update_history_endpoint(record_id: int, payload: UpdateHistoryRequest):
+    """Update manual label override or rejection status in SQLite."""
+    updated = database.update_detection(
+        record_id=record_id,
+        manual_label=payload.manual_label,
+        is_rejected=payload.is_rejected
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Detection record not found")
+    return updated
+
+
+@app.delete("/history/{record_id}")
+async def delete_history_endpoint(record_id: int):
+    """Delete a specific detection record from SQLite."""
+    success = database.delete_detection(record_id)
