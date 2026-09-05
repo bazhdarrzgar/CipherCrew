@@ -318,3 +318,46 @@ def health():
     }
 
 
+def decode_image(contents: bytes) -> Optional[np.ndarray]:
+    """
+    Robustly decodes image bytes into a BGR uint8 numpy array for OpenCV/YOLO/MobileNet.
+    Attempts OpenCV first, then falls back to Pillow to support:
+    AVIF, WebP, HEIC/HEIF, JFIF, PNG with alpha/palette, CMYK JPEG, etc.
+    Also auto-corrects EXIF orientation from smartphone cameras.
+    """
+    if not contents or len(contents) == 0:
+        return None
+
+    # 1. Fast OpenCV decode attempt
+    try:
+        nparr = np.frombuffer(contents, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if image is not None and image.size > 0:
+            return image
+    except Exception as e:
+        logger.debug(f"cv2.imdecode skipped or failed: {e}")
+
+    # 2. Resilient Pillow decode fallback (AVIF, WebP, HEIC, RGBA, etc.)
+    try:
+        with io.BytesIO(contents) as buf:
+            pil_img = PILImage.open(buf)
+            # Correct orientation from phone camera metadata
+            try:
+                pil_img = ImageOps.exif_transpose(pil_img)
+            except Exception:
+                pass
+
+            # Convert RGBA/Palette/CMYK/Grayscale cleanly to standard 3-channel RGB
+            if pil_img.mode != "RGB":
+                pil_img = pil_img.convert("RGB")
+
+            rgb_arr = np.array(pil_img)
+            if rgb_arr is not None and rgb_arr.size > 0:
+                # Convert RGB to BGR for OpenCV
+                return cv2.cvtColor(rgb_arr, cv2.COLOR_RGB2BGR)
+    except Exception as e:
+        logger.error(f"Pillow image decode failed: {e}")
+
+    return None
+
+
