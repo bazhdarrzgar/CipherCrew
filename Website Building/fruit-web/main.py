@@ -478,3 +478,85 @@ async def detect(
         final_detections.append({
             'bbox': det['bbox'],
             'yolo_class': det['yolo_class'],
+            'yolo_conf': round(det['yolo_conf'], 4),
+            'class': cls_name,
+            'label': DISPLAY_NAMES.get(cls_name, cls_name.title()),
+            'class_conf': conf,
+            'mode': crop_mode,
+            'fallback': is_fallback,
+            'probabilities': probs,
+            'gradcam_b64': gradcam_b64,
+            'crop_b64': crop_b64,
+        })
+
+    # Overall condition prioritization: rotten > adulterated > fresh
+    if any(d['class'] == 'rotten' for d in final_detections):
+        dominant_class = 'rotten'
+    elif any(d['class'] == 'adulterated' for d in final_detections):
+        dominant_class = 'adulterated'
+    else:
+        dominant_class = 'fresh'
+
+    matching_dets = [d for d in final_detections if d['class'] == dominant_class]
+    lead_det = max(matching_dets, key=lambda d: d['class_conf']) if matching_dets else final_detections[0]
+
+    overall = {
+        'class': lead_det['class'],
+        'label': lead_det['label'],
+        'class_conf': lead_det['class_conf'],
+        'mode': lead_det['mode'],
+        'probabilities': lead_det['probabilities'],
+    }
+
+    # ── annotate ──
+    annotated = annotate_image(original.copy(), final_detections)
+
+    summary = {cls: sum(1 for d in final_detections if d['class'] == cls)
+               for cls in CLASS_NAMES}
+
+    # ── save to SQLite database ──
+    fruit_type = "Unknown"
+    for d in final_detections:
+        y_cls = d.get('yolo_class', '')
+        if y_cls and y_cls != 'full_image':
+            fruit_type = y_cls.title()
+            break
+
+    annotated_b64 = image_to_base64(annotated)
+    db_id = None
+    try:
+        db_id = database.insert_detection(
+            filename=file.filename or "uploaded_image.jpg",
+            fruit_type=fruit_type,
+            predicted_label=overall['class'],
+            confidence=overall['class_conf'],
+            annotated_image=annotated_b64,
+            metadata={
+                "summary": summary,
+                "overall": overall,
+                "detections": [
+                    {k: v for k, v in d.items() if k not in ("crop_b64", "gradcam_b64")}
+                    for d in final_detections
+                ],
+                "used_fallback": any(d.get('fallback', False) for d in final_detections),
+            },
+            batch_id=request.query_params.get("batch_id")
+        )
+    except Exception as e:
+        print(f"Warning: Failed to save detection to SQLite: {e}")
+
+    return {
+        "annotated_image": annotated_b64,
+        "detections": final_detections,
+        "summary": summary,
+        "summary_labels": {DISPLAY_NAMES.get(cls, cls.title()): count for cls, count in summary.items()},
+        "overall": overall,
+        "mode": overall.get("mode", "tf"),
+        "total": len(final_detections),
+        "used_fallback": any(d.get('fallback', False) for d in final_detections),
+        "db_id": db_id,
+    }
+
+
+# ───────────────────────── History & SQLite Endpoints ─────────────────────────
+
