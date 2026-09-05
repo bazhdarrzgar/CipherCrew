@@ -583,3 +583,12 @@ async def get_history_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/history/stats")
+async def get_history_stats_endpoint():
+    """Retrieve global aggregate metrics across all detections in SQLite."""
+    try:
+        return database.get_db_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
