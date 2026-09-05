@@ -100,3 +100,92 @@ def insert_detection(
         conn.close()
 
 
+def get_history(
+    limit: int = 50,
+    offset: int = 0,
+    label_filter: Optional[str] = None,
+    fruit_filter: Optional[str] = None,
+    search: Optional[str] = None,
+    include_image: bool = False
+) -> Dict[str, Any]:
+    """Retrieves paginated detection history with optional filters."""
+    conn = get_connection()
+    try:
+        conditions = []
+        params: List[Any] = []
+
+        if label_filter:
+            lf = label_filter.lower().strip()
+            if lf in ("good", "fresh"):
+                conditions.append("LOWER(COALESCE(manual_label, predicted_label)) IN ('good', 'fresh')")
+            elif lf in ("bad", "rotten"):
+                conditions.append("LOWER(COALESCE(manual_label, predicted_label)) IN ('bad', 'rotten')")
+            elif lf in ("unknown", "adulterated", "adulterant"):
+                conditions.append("LOWER(COALESCE(manual_label, predicted_label)) IN ('unknown', 'adulterated', 'adulterant')")
+            else:
+                conditions.append("LOWER(COALESCE(manual_label, predicted_label)) = ?")
+                params.append(lf)
+
+        if fruit_filter:
+            conditions.append("LOWER(fruit_type) = ?")
+            params.append(fruit_filter.lower())
+
+        if search:
+            conditions.append("(filename LIKE ? OR fruit_type LIKE ?)")
+            term = f"%{search}%"
+            params.extend([term, term])
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+        # Total count query
+        count_query = f"SELECT COUNT(*) as cnt FROM detections {where_clause}"
+        total_count = conn.execute(count_query, params).fetchone()["cnt"]
+
+        # Select query
+        img_col = "annotated_image" if include_image else "NULL as annotated_image"
+        select_query = f"""
+            SELECT id, batch_id, filename, fruit_type, predicted_label, 
+                   confidence, manual_label, is_rejected, created_at, 
+                   metadata_json, {img_col}
+            FROM detections
+            {where_clause}
+            ORDER BY id DESC
+            LIMIT ? OFFSET ?
+        """
+        query_params = params + [limit, offset]
+        rows = conn.execute(select_query, query_params).fetchall()
+
+        items = []
+        for r in rows:
+            meta = {}
+            if r["metadata_json"]:
+                try:
+                    meta = json.loads(r["metadata_json"])
+                except Exception:
+                    pass
+
+            items.append({
+                "id": r["id"],
+                "batch_id": r["batch_id"],
+                "filename": r["filename"],
+                "fruit_type": r["fruit_type"],
+                "predicted_label": r["predicted_label"],
+                "confidence": r["confidence"],
+                "manual_label": r["manual_label"],
+                "effective_label": r["manual_label"] or r["predicted_label"],
+                "is_rejected": bool(r["is_rejected"]),
+                "created_at": r["created_at"],
+                "annotated_image": r["annotated_image"],
+                "metadata": meta,
+            })
+
+        return {
+            "total": total_count,
+            "limit": limit,
+            "offset": offset,
+            "items": items
+        }
+    finally:
+        conn.close()
+
+
