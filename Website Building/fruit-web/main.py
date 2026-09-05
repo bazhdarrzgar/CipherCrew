@@ -200,3 +200,43 @@ def draw_transparent_rect(image, pt1, pt2, color, alpha=0.45):
     cv2.rectangle(overlay, pt1, pt2, color, -1)
     cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
 
+def make_gradcam_heatmap(img_array, clf_model, last_conv_layer_name='mobilenetv2_1.00_224', pred_index=None):
+    feature_layer = clf_model.get_layer(last_conv_layer_name)
+    feature_layer_index = clf_model.layers.index(feature_layer)
+    classifier_head = clf_model.layers[feature_layer_index + 1:]
+    img_tensor = tf.convert_to_tensor(img_array, dtype=tf.float32)
+
+    with tf.GradientTape() as tape:
+        last_conv_layer_output = feature_layer(img_tensor, training=False)
+        tape.watch(last_conv_layer_output)
+        preds = last_conv_layer_output
+        for layer in classifier_head:
+            try:
+                preds = layer(preds, training=False)
+            except TypeError:
+                preds = layer(preds)
+        if pred_index is None:
+            pred_index = tf.argmax(preds[0])
+        class_channel = preds[:, pred_index]
+
+    grads = tape.gradient(class_channel, last_conv_layer_output)
+    if grads is None:
+        raise RuntimeError("Could not compute Grad-CAM gradients.")
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+    last_conv_layer_output = last_conv_layer_output[0]
+    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
+    heatmap = tf.squeeze(heatmap)
+    heatmap = tf.maximum(heatmap, 0)
+    max_val = tf.math.reduce_max(heatmap)
+    if float(max_val.numpy()) > 0:
+        heatmap = heatmap / max_val
+    return heatmap.numpy()
+
+def superimpose_gradcam(img_bgr, heatmap, alpha=0.4):
+    heatmap = np.uint8(255 * heatmap)
+    jet = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    jet = cv2.resize(jet, (img_bgr.shape[1], img_bgr.shape[0]))
+    superimposed = cv2.addWeighted(jet, alpha, img_bgr, 1 - alpha, 0)
+    return superimposed
+
+
