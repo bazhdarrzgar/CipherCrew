@@ -361,3 +361,60 @@ def decode_image(contents: bytes) -> Optional[np.ndarray]:
     return None
 
 
+@app.post("/detect")
+async def detect(
+    request: Request,
+    file: UploadFile = File(...),
+    return_gradcam: bool = Form(False),
+):
+    """
+    Upload a fruit image. Returns:
+      - annotated_image: base64 JPEG
+      - detections: list of per-object results
+      - summary: counts per class
+    """
+    query_gradcam = request.query_params.get("return_gradcam")
+    if query_gradcam is not None:
+        return_gradcam = query_gradcam.lower() in {"1", "true", "yes", "on"}
+
+    # ── read image ──
+    contents = await file.read()
+    if not contents:
+        await file.seek(0)
+        contents = await file.read()
+
+    image = decode_image(contents)
+    if image is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not decode image '{file.filename}'. Please ensure it is a valid image (JPEG, PNG, WebP, AVIF, HEIC, JFIF)."
+        )
+
+    original = image.copy()
+    h, w = image.shape[:2]
+
+    # ── YOLO detection ──
+    yolo = get_yolo()
+    yolo_results = yolo(image, conf=0.25, verbose=False)
+
+    raw_detections = []
+    for res in yolo_results:
+        for box in res.boxes:
+            try:
+                coords = box.xyxy[0].cpu().numpy()
+            except Exception:
+                coords = box.xyxy[0]
+            x1, y1, x2, y2 = map(int, coords)
+            cls_id = int(box.cls[0])
+            class_name = yolo.names[cls_id] if hasattr(yolo, 'names') else str(cls_id)
+
+            if class_name.lower() not in DETECTABLE_FRUIT_CLASSES:
+                continue
+
+            x1 = max(0, min(x1, w - 1)); y1 = max(0, min(y1, h - 1))
+            x2 = max(0, min(x2, w));     y2 = max(0, min(y2, h))
+            if x2 <= x1 or y2 <= y1:
+                continue
+
+            raw_detections.append({
+                'bbox': [x1, y1, x2, y2],
