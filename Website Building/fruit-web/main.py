@@ -291,3 +291,30 @@ def annotate_image(image: np.ndarray, detections: list) -> np.ndarray:
     return image
 
 
+def image_to_base64(img_bgr: np.ndarray) -> str:
+    _, buffer = cv2.imencode('.jpg', img_bgr, [cv2.IMWRITE_JPEG_QUALITY, 92])
+    return base64.b64encode(buffer).decode('utf-8')
+
+# ───────────────────────── Routes ─────────────────────────
+
+@app.get("/")
+def root():
+    return {
+        "status": "ok",
+        "message": "Fruit Adulteration Detector API",
+        "classes": [DISPLAY_NAMES.get(cls, cls) for cls in CLASS_NAMES],
+        "detectable_fruits": sorted(DETECTABLE_FRUIT_CLASSES),
+    }
+
+
+@app.get("/health")
+def health():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "classifier_model": str(CLASSIFIER_PATH),
+        "yolo_model": str(YOLO_MODEL_PATH),
+        "classifier_preprocessing": choose_preprocessing_mode([]),
+    }
+
+
