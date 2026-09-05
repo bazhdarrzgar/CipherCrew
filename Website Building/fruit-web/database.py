@@ -58,3 +58,45 @@ def init_db():
     finally:
         conn.close()
 
+
+def insert_detection(
+    filename: str,
+    fruit_type: str,
+    predicted_label: str,
+    confidence: float,
+    annotated_image: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    batch_id: Optional[str] = None,
+    manual_label: Optional[str] = None,
+    is_rejected: int = 0
+) -> int:
+    """Inserts a new detection record into SQLite and returns the inserted ID."""
+    conn = get_connection()
+    created_at = datetime.utcnow().isoformat() + "Z"
+    metadata_json = json.dumps(metadata) if metadata is not None else "{}"
+
+    try:
+        with conn:
+            cursor = conn.execute("""
+                INSERT INTO detections (
+                    batch_id, filename, fruit_type, predicted_label, 
+                    confidence, manual_label, is_rejected, created_at, 
+                    annotated_image, metadata_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                batch_id,
+                filename,
+                fruit_type,
+                predicted_label.lower(),
+                float(confidence),
+                manual_label.lower() if manual_label else None,
+                int(is_rejected),
+                created_at,
+                annotated_image,
+                metadata_json
+            ))
+            return cursor.lastrowid
+    finally:
+        conn.close()
+
+
