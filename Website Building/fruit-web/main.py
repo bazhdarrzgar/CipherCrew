@@ -592,3 +592,12 @@ async def get_history_stats_endpoint():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/history/{record_id}")
+async def get_single_history_endpoint(record_id: int):
+    """Retrieve a single detection record by ID with its annotated image."""
+    record = database.get_detection(record_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Detection record not found")
+    return record
+
+
