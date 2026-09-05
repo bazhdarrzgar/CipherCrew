@@ -108,4 +108,154 @@ export const DetectionInterface = () => {
   }, []);
 
   // ── Sequential Queue Processor ──
+  useEffect(() => {
+    if (processingRef.current || isQueueRunning) return;
+
+    const pendingIndex = items.findIndex((i) => i.status === "pending");
+    if (pendingIndex === -1) return;
+
+    processingRef.current = true;
+    setIsQueueRunning(true);
+
+    // Mark this item as processing
+    setItems((prev) =>
+      prev.map((item, i) =>
+        i === pendingIndex ? { ...item, status: "processing" } : item
+      )
+    );
+    setActiveIndex(pendingIndex);
+
+    const item = items[pendingIndex];
+    if (!item.file) {
+      processingRef.current = false;
+      setIsQueueRunning(false);
+      return;
+    }
+
+    const runDetection = async () => {
+      const startTime = Date.now();
+      const formData = new FormData();
+      formData.append("file", item.file as File);
+      formData.append("return_gradcam", "true");
+
+      try {
+        const apiUrl = new URL(
+          process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/detect",
+          typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"
+        );
+        apiUrl.searchParams.set("return_gradcam", "true");
+
+        const res = await fetch(apiUrl.toString(), { method: "POST", body: formData });
+
+        if (!res.ok) {
+          let detailMsg = "Failed to process image";
+          try {
+            const errData = await res.json();
+            detailMsg = errData.detail || detailMsg;
+          } catch {
+            detailMsg = await res.text();
+          }
+          throw new Error(detailMsg);
+        }
+
+        const data: ApiResponse = await res.json();
+
+        // Ensure user sees the feature extraction & laser scanning animation
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 1200) {
+          await new Promise((resolve) => setTimeout(resolve, 1200 - elapsed));
+        }
+
+        const detections = data.detections || [];
+        let newCompletedItems: (BatchItem & { _result: ApiResponse })[] = [];
+
+        if (detections.length <= 1) {
+          const firstDet = detections[0];
+          const rawClass = (data.overall?.class ?? firstDet?.class ?? "").toLowerCase();
+          const overallClass = (
+            rawClass === "fresh" || rawClass === "good" ? "good" :
+            rawClass === "rotten" || rawClass === "bad" ? "bad" :
+            rawClass === "adulterated" || rawClass === "adulterant" || rawClass === "unknown" ? "unknown" : rawClass
+          ) as QualityLabel;
+          const conf = data.overall?.class_conf ?? firstDet?.class_conf ?? 0;
+          const yoloCls = firstDet?.yolo_class ?? "";
+          const fruitName = yoloCls === "full_image" || !yoloCls ? "Unknown" : yoloCls;
+          const cropUrl = firstDet?.crop_b64
+            ? `data:image/jpeg;base64,${firstDet.crop_b64}`
+            : item.previewUrl;
+
+          newCompletedItems = [
+            {
+              ...item,
+              status: "completed",
+              label: overallClass,
+              fruitName,
+              classConf: conf,
+              yoloClass: yoloCls,
+              previewUrl: cropUrl,
+              dbId: data.db_id,
+              detectionIndex: 0,
+              parentImageId: item.id,
+              _result: data,
+            } as BatchItem & { _result: ApiResponse },
+          ];
+        } else {
+          // Multiple fruits detected: add ALL detected fruits as individual items to table dataset
+          newCompletedItems = detections.map((det, dIdx) => {
+            const rawClass = (det.class || "").toLowerCase();
+            const detLabel = (
+              rawClass === "fresh" || rawClass === "good" ? "good" :
+              rawClass === "rotten" || rawClass === "bad" ? "bad" :
+              rawClass === "adulterated" || rawClass === "adulterant" || rawClass === "unknown" ? "unknown" : rawClass
+            ) as QualityLabel;
+            const yoloCls = det.yolo_class ?? "";
+            const fruitName = yoloCls === "full_image" || !yoloCls ? "Unknown" : yoloCls;
+            const cropUrl = det.crop_b64
+              ? `data:image/jpeg;base64,${det.crop_b64}`
+              : item.previewUrl;
+
+            return {
+              id: `${item.id}-F${dIdx + 1}`,
+              no: 0,
+              file: item.file,
+              previewUrl: cropUrl,
+              fileName: `${item.fileName} #${dIdx + 1}`,
+              fruitName,
+              label: detLabel,
+              manualLabel: null,
+              classConf: det.class_conf,
+              yoloClass: yoloCls,
+              status: "completed",
+              dbId: data.db_id,
+              detectionIndex: dIdx,
+              parentImageId: item.id,
+              _result: data,
+            } as BatchItem & { _result: ApiResponse };
+          });
+        }
+
+        setItems((prev) => {
+          const before = prev.slice(0, pendingIndex);
+          const after = prev.slice(pendingIndex + 1);
+          const combined = [...before, ...newCompletedItems, ...after];
+          return combined.map((it, idx) => ({ ...it, no: idx + 1 }));
+        });
+        setActiveIndex(pendingIndex);
+        fetchDbStats();
+      } catch (err: unknown) {
+        setItems((prev) =>
+          prev.map((it, i) =>
+            i === pendingIndex
+              ? { ...it, status: "failed", error: err instanceof Error ? err.message : "Unknown error" }
+              : it
+          )
+        );
+      } finally {
+        processingRef.current = false;
+        setIsQueueRunning(false);
+      }
+    };
+
+    runDetection();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 };
