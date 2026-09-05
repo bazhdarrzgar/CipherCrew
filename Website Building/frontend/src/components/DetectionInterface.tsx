@@ -258,4 +258,84 @@ export const DetectionInterface = () => {
 
     runDetection();
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
+  // ── File Input Handler ──
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      addFiles(Array.from(e.target.files));
+      e.target.value = "";
+    }
+  };
+
+  // ── Drag & Drop ──
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files).filter(
+      (f) =>
+        f.type.startsWith("image/") ||
+        /\.(jpe?g|png|webp|avif|heic|heif|jfif|bmp|tiff?|gif)$/i.test(f.name)
+    );
+    if (files.length > 0) addFiles(files);
+  };
+
+  // ── Override & Reject (with SQLite sync) ──
+  const handleOverrideLabel = async (index: number, label: QualityLabel) => {
+    const targetItem = items[index];
+    setItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, manualLabel: label } : item))
+    );
+    if (targetItem?.dbId) {
+      try {
+        await fetch(`http://127.0.0.1:8000/history/${targetItem.dbId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ manual_label: label }),
+        });
+        fetchDbStats();
+      } catch (err) {
+        console.error("Failed to sync override with SQLite:", err);
+      }
+    }
+  };
+
+  const handleRejectItem = async (index: number) => {
+    const targetItem = items[index];
+    setItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, status: "rejected" } : item))
+    );
+    if (targetItem?.dbId) {
+      try {
+        await fetch(`http://127.0.0.1:8000/history/${targetItem.dbId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_rejected: true }),
+        });
+        fetchDbStats();
+      } catch (err) {
+        console.error("Failed to sync rejection with SQLite:", err);
+      }
+    }
+  };
+
+  const handleRestoreItem = async (index: number) => {
+    const targetItem = items[index];
+    setItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, status: "completed" } : item))
+    );
+    if (targetItem?.dbId) {
+      try {
+        await fetch(`http://127.0.0.1:8000/history/${targetItem.dbId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_rejected: false }),
+        });
+        fetchDbStats();
+      } catch (err) {
+        console.error("Failed to sync restore with SQLite:", err);
+      }
+    }
+  };
+
 };
