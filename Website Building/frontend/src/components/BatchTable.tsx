@@ -178,4 +178,204 @@ export const BatchTable = ({ items, activeIndex, onSelectItem, onOverrideLabel, 
       <div className="bg-white/40 dark:bg-zinc-900/70 backdrop-blur-3xl border border-white/60 dark:border-zinc-800 rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden flex flex-col">
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-black/5 dark:border-white/10 gap-3 bg-white/30 dark:bg-zinc-900/50">
+          <div className="flex items-center justify-between sm:justify-start gap-3 sm:gap-4 flex-wrap">
+            <h2 className="text-base sm:text-lg font-bold font-instrument tracking-tight text-black/90 dark:text-zinc-100">Batch Results</h2>
+            
+            {/* Page Size Selector (10 / 20 / 100) */}
+            <div className="flex items-center gap-1.5 text-xs text-black/60 dark:text-zinc-300 bg-white/60 dark:bg-zinc-800/80 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-white/60 dark:border-zinc-700 shadow-sm">
+              <span className="font-medium">Show:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-white dark:bg-zinc-800 border border-black/10 dark:border-zinc-700 rounded-lg px-2 py-0.5 text-xs font-bold text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white cursor-pointer shadow-inner"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={100}>100</option>
+              </select>
+              <span>elements</span>
+            </div>
+          </div>
+
+          {/* Export Buttons */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-stretch sm:justify-end">
+            <button
+              onClick={() => exportToCSV(buildExportItems())}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-bold bg-white/60 hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white border border-white/60 dark:border-zinc-700 rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
+            >
+              <FileText className="w-3.5 h-3.5" /> <span>CSV</span>
+            </button>
+            <button
+              onClick={() => exportToJSON(buildExportItems())}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-bold bg-white/60 hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white border border-white/60 dark:border-zinc-700 rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
+            >
+              <FileJson className="w-3.5 h-3.5" /> <span>JSON</span>
+            </button>
+            <button
+              onClick={() => exportToPDF(buildExportItems())}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-bold bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-zinc-200 rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
+            >
+              <Download className="w-3.5 h-3.5" /> <span>PDF Report</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Mobile Card View (shown on screens < 768px) ── */}
+        <div className="block md:hidden divide-y divide-black/5 dark:divide-white/5 p-3 sm:p-4 space-y-3 max-h-[560px] overflow-y-auto">
+          <AnimatePresence mode="popLayout">
+            {paginatedItems.map((item, localIdx) => {
+              const originalIdx = startIndex + localIdx;
+              const effectiveLabel = item.manualLabel ?? item.label;
+              const isActive = originalIdx === activeIndex;
+              const isRejected = item.status === "rejected";
+
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className={`p-3 rounded-2xl border transition-all flex flex-col gap-2.5 ${
+                    isActive 
+                      ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/20 dark:border-white/20 shadow-sm" 
+                      : "bg-white/40 dark:bg-zinc-800/40 border-black/5 dark:border-zinc-800"
+                  } ${isRejected ? "opacity-40" : ""}`}
+                >
+                  {/* Top Row: Thumbnail + Details + Status */}
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-xl overflow-hidden bg-black/5 dark:bg-black/30 shrink-0 ring-2 transition-all ${isActive ? "ring-black dark:ring-white" : "ring-transparent"}`}>
+                      <img src={item.previewUrl} alt={item.fileName} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-xs font-semibold text-black dark:text-white capitalize truncate">
+                          {item.fruitName || item.yoloClass || "Fruit"}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {STATUS_ICON[item.status]}
+                          <span className="text-[10px] text-black/50 dark:text-zinc-400 capitalize">{item.status}</span>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-black/60 dark:text-zinc-400 truncate mt-0.5" title={item.fileName}>
+                        {item.fileName}
+                      </p>
+                      <span className="font-mono text-[10px] text-black/40 dark:text-zinc-500">
+                        #{item.no} • {item.id}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Middle Row: Category + Confidence */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-black/5 dark:border-white/5 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border uppercase ${CATEGORY_STYLES[normalizeQualityLabel(effectiveLabel)] ?? CATEGORY_STYLES[""]}`}>
+                        {getDisplayQualityLabel(effectiveLabel) || "Detecting…"}
+                      </span>
+                      {item.manualLabel && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800/60">
+                          Override
+                        </span>
+                      )}
+                      {item.status === "completed" && (
+                        <select
+                          value={normalizeQualityLabel(effectiveLabel) || effectiveLabel}
+                          onChange={(e) => onOverrideLabel(originalIdx, e.target.value as QualityLabel)}
+                          className="text-[10px] bg-white/70 dark:bg-zinc-800 border border-black/10 dark:border-zinc-700 rounded-lg px-1.5 py-0.5 font-semibold text-black/70 dark:text-zinc-200 cursor-pointer"
+                        >
+                          {CATEGORY_OPTIONS.map((cat) => (
+                            <option key={cat.value} value={cat.value}>{cat.label}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    {item.status === "completed" && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-black/50 dark:text-zinc-400 font-mono">Conf:</span>
+                        <span className="font-mono text-[11px] font-bold text-black/80 dark:text-zinc-200">
+                          {(item.classConf * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom Row: Actions */}
+                  <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-black/5 dark:border-white/5">
+                    {item.status === "completed" && (
+                      <button
+                        onClick={() => onSelectItem(originalIdx)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15 text-[11px] font-semibold text-black dark:text-white transition-colors"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>View</span>
+                      </button>
+                    )}
+                    {item.status === "rejected" ? (
+                      <button
+                        onClick={() => onRestoreItem(originalIdx)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Restore</span>
+                      </button>
+                    ) : (
+                      item.status === "completed" && (
+                        <button
+                          onClick={() => onRejectItem(originalIdx)}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 text-[11px] font-semibold text-amber-600 dark:text-amber-400 transition-colors"
+                        >
+                          <XCircle className="w-3 h-3" />
+                          <span>Reject</span>
+                        </button>
+                      )
+                    )}
+                    {onRemoveItem && (
+                      <button
+                        onClick={() => onRemoveItem(originalIdx)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/30 text-[11px] font-semibold text-red-600 dark:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Remove</span>
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+
+        {/* ── Desktop & Tablet Table Body (shown on screens >= 768px) ── */}
+        <div className="hidden md:block max-h-[540px] overflow-y-auto overflow-x-auto relative scrollbar-thin">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md z-10 border-b border-black/10 dark:border-white/10 shadow-sm">
+              <tr className="text-left">
+                <th className="px-5 py-3.5 text-[10px] uppercase tracking-widest font-semibold text-black/50 dark:text-zinc-400">No.</th>
+                <th className="px-5 py-3.5 text-[10px] uppercase tracking-widest font-semibold text-black/50 dark:text-zinc-400">Image / ID</th>
+                <th className="px-5 py-3.5 text-[10px] uppercase tracking-widest font-semibold text-black/50 dark:text-zinc-400">File Name</th>
+                <th className="px-5 py-3.5 text-[10px] uppercase tracking-widest font-semibold text-black/50 dark:text-zinc-400">Fruit</th>
+                <th className="px-5 py-3.5 text-[10px] uppercase tracking-widest font-semibold text-black/50 dark:text-zinc-400">Category</th>
+                <th className="px-5 py-3.5 text-[10px] uppercase tracking-widest font-semibold text-black/50 dark:text-zinc-400">Confidence</th>
+                <th className="px-5 py-3.5 text-[10px] uppercase tracking-widest font-semibold text-black/50 dark:text-zinc-400">Status</th>
+                <th className="px-5 py-3.5 text-[10px] uppercase tracking-widest font-semibold text-black/50 dark:text-zinc-400">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <AnimatePresence mode="popLayout">
+                {paginatedItems.map((item, localIdx) => {
+                  const originalIdx = startIndex + localIdx;
+                  const effectiveLabel = item.manualLabel ?? item.label;
+                  const isActive = originalIdx === activeIndex;
+                  const isRejected = item.status === "rejected";
+
+                  return (
+                    <motion.tr
+                      key={item.id}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
 };
