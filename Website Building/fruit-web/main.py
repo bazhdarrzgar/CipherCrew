@@ -418,3 +418,63 @@ async def detect(
 
             raw_detections.append({
                 'bbox': [x1, y1, x2, y2],
+                'yolo_conf': float(box.conf[0]),
+                'yolo_class': class_name,
+                'fallback': False,
+            })
+
+    if not raw_detections:
+        raw_detections.append({
+            'bbox': [0, 0, w, h],
+            'yolo_conf': 0.0,
+            'yolo_class': 'full_image',
+            'fallback': True,
+        })
+
+    # ── collect crops ──
+    crops = []
+    for det in raw_detections:
+        x1, y1, x2, y2 = det['bbox']
+        x1c = max(0, x1 - CROP_PADDING);  y1c = max(0, y1 - CROP_PADDING)
+        x2c = min(w, x2 + CROP_PADDING);  y2c = min(h, y2 + CROP_PADDING)
+        crop = original[y1c:y2c, x1c:x2c]
+        if crop.size == 0:
+            continue
+        crops.append(crop)
+
+    if not crops:
+        raise HTTPException(status_code=422, detail="No valid image crop could be produced.")
+
+    # ── classify each detected fruit crop individually ──
+    clf = get_classifier()
+    final_detections = []
+
+    for i, det in enumerate(raw_detections):
+        is_fallback = bool(det.get('fallback', False))
+        crop_img = crops[i] if (not is_fallback and i < len(crops)) else original
+        crop_mode = choose_preprocessing_mode([crop_img])
+        crop_batch = np.expand_dims(preprocess_crop(crop_img, crop_mode), axis=0)
+
+        pred = clf.predict(crop_batch, verbose=0)[0]
+        idx = int(np.argmax(pred))
+        cls_name = CLASS_NAMES[idx]
+        conf = round(float(pred[idx]), 4)
+        probs = {
+            CLASS_NAMES[j]: round(float(pred[j]), 4)
+            for j in range(len(CLASS_NAMES))
+        }
+
+        gradcam_b64 = None
+        if return_gradcam:
+            try:
+                heatmap = make_gradcam_heatmap(crop_batch, clf, pred_index=idx)
+                cam_img = superimpose_gradcam(crop_img, heatmap)
+                gradcam_b64 = image_to_base64(cam_img)
+            except Exception as e:
+                print(f"Error generating Grad-CAM: {e}")
+
+        crop_b64 = image_to_base64(crop_img)
+
+        final_detections.append({
+            'bbox': det['bbox'],
+            'yolo_class': det['yolo_class'],
