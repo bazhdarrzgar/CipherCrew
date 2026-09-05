@@ -888,4 +888,158 @@ const ResultView = ({
               {result.overall.label.toLowerCase() === "fresh" ? "Good" :
                result.overall.label.toLowerCase() === "rotten" ? "Bad" :
                result.overall.label.toLowerCase() === "adulterant" || result.overall.label.toLowerCase() === "adulterated" ? "Unknown" :
+               result.overall.label}
+            </h2>
+            <p className="text-xs sm:text-sm font-medium text-black/60 dark:text-zinc-400 mt-1">
+              Confidence: {(result.overall.class_conf * 100).toFixed(1)}%
+            </p>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between px-2">
+          <h2 className="text-xl sm:text-2xl font-bold font-instrument text-black/90 dark:text-zinc-100">Detected Elements</h2>
+          <span className="text-xs font-semibold text-black/50 dark:text-zinc-400 font-mono">
+            {result.detections.length} {result.detections.length === 1 ? "fruit" : "fruits"}
+          </span>
+        </div>
+
+        {result.detections.length === 0 ? (
+          <div className="bg-gray-50 dark:bg-zinc-900/40 rounded-2xl p-6 sm:p-8 text-center text-xs sm:text-sm text-gray-500 dark:text-zinc-400 border border-gray-200 dark:border-zinc-800">
+            All detected fruits from this image have been removed from the dataset.
+          </div>
+        ) : (
+          result.detections.map((det, idx) => (
+            <DetectionCard
+              key={idx}
+              det={det}
+              detectionIndex={idx}
+              isSelected={activeItem?.detectionIndex === idx}
+              onRemove={() => onRemoveDetection(idx)}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  </motion.div>
+);
+
+// ─── Detection Card ───────────────────────────────────────────────────────────
+
+interface DetectionResult2 {
+  class: string;
+  label?: string;
+  class_conf: number;
+  yolo_class: string;
+  yolo_conf: number;
+  bbox: number[];
+  gradcam_b64: string | null;
+  crop_b64: string | null;
+  fallback?: boolean;
+}
+
+const DetectionCard = ({
+  det,
+  detectionIndex,
+  isSelected,
+  onRemove,
+}: {
+  det: DetectionResult2;
+  detectionIndex: number;
+  isSelected?: boolean;
+  onRemove?: () => void;
+}) => {
+  const [showCam, setShowCam] = useState(false);
+  const getDisplayLabel = () => {
+    if (det.label) {
+      const l = det.label.toLowerCase();
+      if (l === "fresh") return "Good";
+      if (l === "rotten") return "Bad";
+      if (l === "adulterated" || l === "adulterant") return "Unknown";
+      return det.label;
+    }
+    const c = det.class?.toLowerCase();
+    if (c === "fresh" || c === "good") return "Good";
+    if (c === "rotten" || c === "bad") return "Bad";
+    if (c === "adulterated" || c === "unknown" || c === "adulterant") return "Unknown";
+    return det.class;
+  };
+  const displayLabel = getDisplayLabel();
+  const fruitName = det.yolo_class && det.yolo_class !== "full_image"
+    ? det.yolo_class.charAt(0).toUpperCase() + det.yolo_class.slice(1)
+    : "Fruit";
+
+  const getStatusColor = (cls: string) => {
+    switch (cls?.toLowerCase()) {
+      case "good":
+      case "fresh": return "bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-200";
+      case "bad":
+      case "rotten": return "bg-red-50/70 dark:bg-red-950/30 border-red-300 dark:border-red-800/60 text-red-950 dark:text-red-200";
+      case "unknown":
+      case "adulterated": return "bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/60 text-amber-950 dark:text-amber-200";
+      default: return "bg-white/40 dark:bg-zinc-900/60 border-white/60 dark:border-zinc-800 text-gray-900 dark:text-zinc-100";
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className={`border rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col gap-3 sm:gap-4 shadow-xl shadow-black/5 dark:shadow-black/30 backdrop-blur-2xl transition-all ${getStatusColor(det.class)} ${isSelected ? "ring-2 ring-black dark:ring-white scale-[1.01]" : ""}`}
+    >
+      <div className="flex justify-between items-start gap-2.5 sm:gap-3 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-bold text-xl sm:text-2xl uppercase tracking-tight">{displayLabel}</h3>
+            <span className="px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-semibold bg-black/10 dark:bg-white/10 capitalize">
+              {fruitName} #{detectionIndex + 1}
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm font-medium opacity-80 mt-0.5">Confidence: {(det.class_conf * 100).toFixed(1)}%</p>
+          {det.fallback && <p className="text-[11px] sm:text-xs font-medium opacity-70 mt-1">Full-image classification</p>}
+        </div>
+
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          {det.gradcam_b64 && (
+            <button
+              onClick={() => setShowCam(!showCam)}
+              className="px-2.5 sm:px-3 py-1.5 bg-white/60 hover:bg-white dark:bg-zinc-800/90 dark:hover:bg-zinc-700 text-black dark:text-white border border-black/5 dark:border-zinc-700 rounded-lg text-xs font-bold transition-colors shadow-sm"
+            >
+              {showCam ? "Hide Explainability" : "Explainability"}
+            </button>
+          )}
+          {onRemove && (
+            <button
+              onClick={onRemove}
+              title="Remove this detected fruit from dataset"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-red-100 hover:bg-red-200 dark:bg-red-950/60 dark:hover:bg-red-900/80 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800/80 rounded-lg text-xs font-bold transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Remove</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {det.crop_b64 && (
+        <div className="relative w-full h-40 sm:h-48 md:h-52 bg-black/5 dark:bg-black/40 rounded-xl overflow-hidden mt-1 sm:mt-2">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={showCam ? "cam" : "crop"}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              src={`data:image/jpeg;base64,${showCam ? det.gradcam_b64 : det.crop_b64}`}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </AnimatePresence>
+          {showCam && (
+            <div className="absolute bottom-2 left-2 right-2 p-2 bg-black/60 backdrop-blur-md rounded-lg text-white text-xs flex gap-2 items-center">
+              <Info className="w-4 h-4 text-blue-400 shrink-0" />
+              <span className="text-[11px] sm:text-xs">Grad-CAM highlights regions influencing the AI prediction.</span>
+            </div>
+          )}
+        </div>
+      )}
+    </motion.div>
+  );
 };
