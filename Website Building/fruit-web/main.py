@@ -618,3 +618,17 @@ async def update_history_endpoint(record_id: int, payload: UpdateHistoryRequest)
 async def delete_history_endpoint(record_id: int):
     """Delete a specific detection record from SQLite."""
     success = database.delete_detection(record_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Detection record not found")
+    return {"status": "deleted", "id": record_id}
+
+
+@app.delete("/history")
+async def clear_history_endpoint():
+    """Clear all detection records from SQLite."""
+    deleted_count = database.clear_history()
+    return {"status": "cleared", "deleted_count": deleted_count}
+
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
