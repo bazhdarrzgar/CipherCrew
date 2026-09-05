@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: fruit-detector-api
+    env: docker
+    rootDir: fruit-web
+    healthCheckPath: /health
+    envVars:
+      - key: YOLO_MODEL
+        value: yolov8n.pt
+      - key: CLASSIFIER_MODEL
+        value: models/fruit_adulteration_final.keras
+      - key: FRUIT_DETECTOR_CLASSES
+        value: apple,banana,orange
+      - key: CLASSIFIER_PREPROCESSING
+        value: tf
