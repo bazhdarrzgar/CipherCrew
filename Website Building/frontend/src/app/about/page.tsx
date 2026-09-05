@@ -83,7 +83,40 @@ export default function AboutPage() {
                 role: "Project Creator",
               },
               {
-</div>
-</div>
-);
+                name: "Diksha Borah",
+                initials: "DB",
+                role: "Project Creator",
+              },
+            ].map((member) => (
+              <div
+                key={member.name}
+                className="group relative flex flex-col items-start p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/70 dark:bg-zinc-900/60 border border-black/10 dark:border-zinc-800/80 backdrop-blur-xl shadow-lg shadow-black/[0.03] dark:shadow-black/20 hover:border-black/30 dark:hover:border-zinc-600 hover:-translate-y-1 transition-all duration-300"
+              >
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 border border-black/5 dark:border-white/10 flex items-center justify-center font-instrument text-base sm:text-lg font-semibold text-black dark:text-white shadow-sm mb-4 sm:mb-5 group-hover:scale-105 transition-transform duration-300">
+                  {member.initials}
+                </div>
+                <h3 className="text-lg sm:text-xl font-instrument font-medium text-black dark:text-white tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  {member.name}
+                </h3>
+                <span className="text-[11px] sm:text-xs font-inter font-medium text-zinc-500 dark:text-zinc-400 mt-1 uppercase tracking-wider">
+                  {member.role}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="relative z-20 border-t border-black/10 dark:border-white/10 py-8 sm:py-12 px-4 sm:px-8 max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 font-inter text-xs sm:text-sm text-gray-500 dark:text-zinc-400 text-center sm:text-left">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <BrandLogo size={24} className="sm:w-[32px] sm:h-[32px]" />
+          <span className="font-instrument text-lg sm:text-xl text-black dark:text-white font-semibold tracking-tight">
+            CipherCrew<sup>®</sup>
+          </span>
+        </div>
+        <p>© {new Date().getFullYear()} CipherCrew.</p>
+      </footer>
+    </div>
+  );
 }
