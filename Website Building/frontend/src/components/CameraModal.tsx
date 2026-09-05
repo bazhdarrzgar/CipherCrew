@@ -298,4 +298,148 @@ export const CameraModal = ({ isOpen, onClose, onCapture }: CameraModalProps) =>
                   </button>
                 </div>
               </div>
+            ) : previewUrl ? (
+              /* Image Preview mode */
+              <div className="relative w-full h-full flex items-center justify-center bg-black">
+                <img
+                  src={previewUrl}
+                  alt="Captured fruit produce"
+                  className="w-full h-full object-contain"
+                />
+                <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 pointer-events-none px-3 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-[11px] sm:text-xs text-emerald-400 font-inter font-medium flex items-center gap-1.5 shadow-lg">
+                  <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>Photo ready for grading</span>
+                </div>
+              </div>
+            ) : (
+              /* Live Camera Stream */
+              <div className="relative w-full h-full flex items-center justify-center">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`w-full h-full object-cover ${
+                    facingMode === "user" ? "scale-x-[-1]" : ""
+                  }`}
+                />
+
+                {/* Viewfinder Overlay Reticle */}
+                <div className="absolute inset-6 sm:inset-12 pointer-events-none flex flex-col justify-between">
+                  <div className="flex justify-between">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-l-2 border-emerald-400/80 rounded-tl-lg shadow-sm" />
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-r-2 border-emerald-400/80 rounded-tr-lg shadow-sm" />
+                  </div>
+                  <div className="flex justify-between">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-l-2 border-emerald-400/80 rounded-bl-lg shadow-sm" />
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-r-2 border-emerald-400/80 rounded-br-lg shadow-sm" />
+                  </div>
+                </div>
+
+                {/* Framing Guidance */}
+                <div className="absolute top-3 sm:top-4 left-1/2 -translate-x-1/2 pointer-events-none px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] sm:text-[11px] text-zinc-300 font-inter font-medium tracking-wide whitespace-nowrap">
+                  Align produce inside visual frame
+                </div>
+
+                {isLoading && (
+                  <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3">
+                    <RefreshCw className="w-6 h-6 text-emerald-400 animate-spin" />
+                    <span className="text-xs text-zinc-300 font-inter">Starting camera stream…</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Controls Bar */}
+          <div className="px-4 sm:px-6 py-3 sm:py-5 border-t border-zinc-800/80 bg-zinc-900/80 backdrop-blur-xl flex items-center justify-between gap-2 sm:gap-4 shrink-0">
+            {previewUrl ? (
+              /* Action buttons when photo is captured */
+              <div className="w-full flex items-center justify-between gap-3 sm:gap-4">
+                <button
+                  onClick={handleRetake}
+                  disabled={isSubmitting}
+                  className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl sm:rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs sm:text-sm font-medium transition-all active:scale-95 border border-zinc-700 disabled:opacity-50"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span>Retake</span>
+                </button>
+                <button
+                  onClick={handleConfirm}
+                  disabled={isSubmitting}
+                  className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold transition-all active:scale-95 shadow-lg shadow-emerald-950/40 disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                      <span>Queueing…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+                      <span>Grade Produce</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              /* Live capture buttons */
+              <div className="w-full flex items-center justify-between gap-2">
+                {/* Switch camera button */}
+                <div className="w-16 sm:w-24 flex justify-start">
+                  {hasMultipleCameras && !cameraError && (
+                    <button
+                      onClick={handleToggleCamera}
+                      title="Switch Camera (Front/Rear)"
+                      className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-medium transition-all active:scale-95"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Flip</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Shutter Button & Instant Capture */}
+                {!cameraError && (
+                  <div className="flex items-center gap-2.5 sm:gap-4">
+                    {/* Primary Shutter Button */}
+                    <button
+                      onClick={() => handleSnap(false)}
+                      disabled={isLoading}
+                      title="Take Produce Photo"
+                      className="group relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full border-4 border-white/80 hover:border-white transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-black/60 shrink-0"
+                    >
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white group-hover:scale-105 transition-transform" />
+                    </button>
+
+                    {/* Instant Snap & Grade Button */}
+                    <button
+                      onClick={() => handleSnap(true)}
+                      disabled={isLoading}
+                      title="Snap & Grade Instantly"
+                      className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-emerald-600/90 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold transition-all shadow-md shadow-emerald-950/30 active:scale-95 border border-emerald-400/30 whitespace-nowrap"
+                    >
+                      <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 fill-amber-300" />
+                      <span>Instant Grade</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Device native camera trigger */}
+                <div className="w-16 sm:w-24 flex justify-end">
+                  <button
+                    onClick={() => nativeCameraInputRef.current?.click()}
+                    title="Open device camera app"
+                    className="p-2 sm:p-2.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700 transition-all text-xs"
+                  >
+                    <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
 };
