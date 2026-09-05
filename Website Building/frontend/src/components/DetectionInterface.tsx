@@ -338,4 +338,94 @@ export const DetectionInterface = () => {
     }
   };
 
+  const handleLoadHistoryRecord = (record: HistoryRecord) => {
+    const meta = record.metadata || {};
+    const rawDets = (meta.detections as DetectionResult[]) || [];
+    const apiResponse: ApiResponse = {
+      annotated_image: record.annotated_image || "",
+      detections: rawDets.length > 0 ? rawDets : [
+        {
+          class: record.predicted_label,
+          label: record.predicted_label.toUpperCase(),
+          class_conf: record.confidence,
+          yolo_class: record.fruit_type,
+          yolo_conf: record.confidence,
+          bbox: [0, 0, 100, 100],
+          gradcam_b64: null,
+          crop_b64: null,
+          fallback: meta.used_fallback ?? false,
+          probabilities: meta.overall?.probabilities || { [record.predicted_label]: record.confidence },
+        },
+      ],
+      summary: meta.summary || { [record.predicted_label]: 1 },
+      overall: meta.overall || {
+        class: record.predicted_label,
+        label: record.predicted_label.toUpperCase(),
+        class_conf: record.confidence,
+        probabilities: { [record.predicted_label]: record.confidence },
+      },
+      total: rawDets.length || 1,
+      used_fallback: meta.used_fallback ?? false,
+      db_id: record.id,
+    };
+
+    let newItemsToLoad: (BatchItem & { _result: ApiResponse })[] = [];
+    if (rawDets.length > 1) {
+      newItemsToLoad = rawDets.map((det, dIdx) => {
+        const rawClass = (det.class || "").toLowerCase();
+        const detLabel = (
+          rawClass === "fresh" || rawClass === "good" ? "good" :
+          rawClass === "rotten" || rawClass === "bad" ? "bad" :
+          rawClass === "adulterated" || rawClass === "adulterant" || rawClass === "unknown" ? "unknown" : rawClass
+        ) as QualityLabel;
+        const yoloCls = det.yolo_class ?? "";
+        const fruitName = yoloCls === "full_image" || !yoloCls ? "Unknown" : yoloCls;
+        return {
+          id: `DB-${record.id}-F${dIdx + 1}`,
+          no: 0,
+          previewUrl: record.annotated_image ? `data:image/jpeg;base64,${record.annotated_image}` : "",
+          fileName: `${record.filename} #${dIdx + 1}`,
+          fruitName,
+          label: detLabel,
+          manualLabel: record.manual_label,
+          classConf: det.class_conf,
+          yoloClass: yoloCls,
+          status: record.is_rejected ? "rejected" : "completed",
+          dbId: record.id,
+          createdAt: record.created_at,
+          detectionIndex: dIdx,
+          parentImageId: `DB-${record.id}`,
+          _result: apiResponse,
+        } as BatchItem & { _result: ApiResponse };
+      });
+    } else {
+      newItemsToLoad = [{
+        id: `DB-${record.id}`,
+        no: 0,
+        previewUrl: record.annotated_image ? `data:image/jpeg;base64,${record.annotated_image}` : "",
+        fileName: record.filename,
+        fruitName: record.fruit_type,
+        label: record.predicted_label,
+        manualLabel: record.manual_label,
+        classConf: record.confidence,
+        yoloClass: record.fruit_type,
+        status: record.is_rejected ? "rejected" : "completed",
+        dbId: record.id,
+        createdAt: record.created_at,
+        detectionIndex: 0,
+        parentImageId: `DB-${record.id}`,
+        _result: apiResponse,
+      } as BatchItem & { _result: ApiResponse }];
+    }
+
+    setItems((prev) => {
+      const existingIdx = prev.findIndex((i) => i.dbId === record.id);
+      if (existingIdx !== -1) {
+        setActiveIndex(existingIdx);
+        return prev;
+      }
+      const updated = [...prev, ...newItemsToLoad].map((it, idx) => ({ ...it, no: idx + 1 }));
+      setActiveIndex(updated.length - newItemsToLoad.length);
+      return updated;
+    });
 };
