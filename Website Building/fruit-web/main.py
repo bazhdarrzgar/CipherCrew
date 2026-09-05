@@ -240,3 +240,54 @@ def superimpose_gradcam(img_bgr, heatmap, alpha=0.4):
     return superimposed
 
 
+def annotate_image(image: np.ndarray, detections: list) -> np.ndarray:
+    for det in detections:
+        x1, y1, x2, y2 = det['bbox']
+        cls   = det['class']
+        conf  = det['class_conf']
+        color = CLASS_COLORS_BGR.get(cls, (200, 200, 200))
+        font_scale, thickness, pad = scale_params(image)
+
+        # bbox
+        cv2.rectangle(image, (x1, y1), (x2, y2), color, thickness)
+
+        # label background + text
+        label = f"{DISPLAY_NAMES.get(cls, cls).upper()} {int(conf*100)}%"
+        (tw, th), base = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+        lh = th + base + pad * 2
+        lx1 = x1
+        ly2 = max(lh, y1 - 4)
+        ly1 = ly2 - lh
+        if ly1 < 0:
+            ly1, ly2 = y2 + 4, y2 + 4 + lh
+        lx2 = lx1 + tw + pad * 2
+        h_, w_ = image.shape[:2]
+        lx2 = min(lx2, w_ - 2)
+
+        draw_transparent_rect(image, (lx1, ly1), (lx2, ly2), color, alpha=0.55)
+        cv2.putText(image, label, (lx1 + pad, ly2 - pad),
+                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255,255,255), thickness, cv2.LINE_AA)
+
+        # confidence bar
+        bar_w = max(40, x2 - x1)
+        filled = int(bar_w * conf)
+        bh = max(6, int(min(image.shape[:2]) / 160))
+        by1 = min(image.shape[0] - bh - 2, y2 + lh + 6)
+        draw_transparent_rect(image, (x1, by1), (x1 + bar_w, by1 + bh), (50,50,50), alpha=0.35)
+        cv2.rectangle(image, (x1, by1), (x1 + filled, by1 + bh), color, -1)
+
+    # summary banner
+    counts = {cls: sum(1 for d in detections if d['class'] == cls) for cls in CLASS_NAMES}
+    mode = detections[0].get('mode', 'auto') if detections else 'auto'
+    summary = (f"Detected:{len(detections)}  "
+               f"Good:{counts['fresh']}  "
+               f"Bad:{counts['rotten']}  "
+               f"Unknown:{counts['adulterated']}")
+    fs, th2, pd2 = scale_params(image)
+    (sw, sth), sbl = cv2.getTextSize(summary, cv2.FONT_HERSHEY_SIMPLEX, fs, th2)
+    draw_transparent_rect(image, (10, 10), (14 + sw + pd2*2, 14 + sth + pd2*2), (0,0,0), alpha=0.55)
+    cv2.putText(image, summary, (12 + pd2, 12 + sth + pd2),
+                cv2.FONT_HERSHEY_SIMPLEX, fs, (255,255,255), th2, cv2.LINE_AA)
+    return image
+
+
