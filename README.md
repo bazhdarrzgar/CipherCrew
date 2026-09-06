@@ -39,7 +39,7 @@ Produce sorting in agricultural supply chains is traditionally labor-intensive, 
 
 The system combines:
 1. **YOLOv8 Object Detection**: Scans the input image to identify and localize fruits (Apples, Bananas, Oranges), producing tight bounding boxes.
-2. **MobileNetV2 Classifier**: Crops each localized fruit, resizes it to $224 \times 224$ px, and performs condition classification into **Good** (fresh), **Acceptable** (sub-optimal / adulterated patterns), or **Damaged** (rotten / decayed).
+2. **MobileNetV2 Classifier**: Crops each localized fruit, resizes it to $224 \times 224$ px, and performs condition classification into **Good** (fresh / prime), **Bad** (decayed / damaged), or **Unknown** (medium / ambiguous quality).
 3. **Fallback Inference**: If no bounding box is detected, the full image is classified to ensure every user upload receives an assessment.
 4. **Grad-CAM Explainability**: Visualizes class activation heatmaps so users can inspect *why* the model made a specific prediction.
 5. **Interactive Full-Stack Platform**: A Next.js 14 web client connected to a high-throughput FastAPI backend with SQLite history tracking.
@@ -73,12 +73,12 @@ The system combines:
                                      └───────────┬─────────────┘
                                                  │
                                                  ▼
-                                     ┌─────────────────────────┐
-                                     │  Quality Assessment:    │
-                                     │  • Good (Fresh)         │
-                                     │  • Acceptable (Unknown) │
-                                     │  • Damaged (Rotten)     │
-                                     └───────────┬─────────────┘
+                                      ┌─────────────────────────┐
+                                      │  Quality Assessment:    │
+                                      │  • Good (Fresh)         │
+                                      │  • Bad (Damaged)        │
+                                      │  • Unknown (Medium)     │
+                                      └───────────┬─────────────┘
                                                  │
                         ┌────────────────────────┴────────────────────────┐
                         ▼                                                 ▼
@@ -95,23 +95,116 @@ The system combines:
 
 ## 📊 Model Evaluation & Benchmark Comparison
 
-Two model architectures were investigated and benchmarked on the produce quality dataset:
+Two model architectures were investigated, trained, and benchmarked on the produce quality dataset ($N = 634$ test samples across 6 produce categories):
+1. **Custom CNN Baseline** (trained from scratch)
+2. **MobileNetV2 Transfer Learning** (primary production classifier)
 
-| Metric | Baseline Custom CNN | MobileNetV2 (Transfer Learning) |
-| :--- | :---: | :---: |
-| **Test Accuracy** | ~82.4% | **94.8%** |
-| **Validation Loss** | 0.482 | **0.176** |
-| **Inference Latency** | ~45ms | **~28ms (Optimized)** |
-| **Parameter Count** | ~4.2M | **~2.2M** |
-| **Pretrained Weights** | None (Trained from scratch) | ImageNet initialization |
+### 🏷️ Standardized Quality Grade Labels
 
-### Quality Grade Labels
+The system categorizes produce into three clear quality condition labels:
 
-| Internal Label | UI Display Grade | Description |
-| :--- | :--- | :--- |
-| `fresh` | 🟢 **Good** | Fresh, firm, and commercially viable produce. |
-| `adulterated` | 🟡 **Acceptable / Unknown** | Minor cosmetic blemishes or irregular surface textures. |
-| `rotten` | 🔴 **Damaged** | Severe decay, fungal growth, or physical degradation. |
+| Evaluation Label | Standardized Grade | Status Indicator | Description & Recommended Action |
+| :--- | :--- | :---: | :--- |
+| `good` | **Good** | 🟢 Green | Fresh, firm, and commercially viable produce. Approved for distribution. |
+| `bad` | **Bad** | 🔴 Red | Severe rot, mold, fungal decay, or tissue degradation. Rejected / discard. |
+| `unknown` *(medium)* | **Unknown** | 🟡 Yellow | Borderline freshness, minor cosmetic blemishes, or ambiguous condition. Flagged for manual review. |
+
+---
+
+### 🏆 Overall Architecture Benchmark
+
+| Evaluation Metric | Baseline Custom CNN | MobileNetV2 (Production Model) | Improvement |
+| :--- | :---: | :---: | :---: |
+| **Test Accuracy** | **78.0%** (0.78) | **87.0%** (0.87) | **+9.0%** |
+| **Weighted Precision** | 0.78 | **0.88** | **+0.10** |
+| **Weighted Recall** | 0.78 | **0.87** | **+0.09** |
+| **Weighted F1-Score** | 0.77 | **0.87** | **+0.10** |
+| **Macro Avg Precision** | 0.75 | **0.83** | **+0.08** |
+| **Macro Avg Recall** | 0.74 | **0.82** | **+0.08** |
+| **Macro Avg F1-Score** | 0.74 | **0.82** | **+0.08** |
+| **Test Samples ($N$)** | 634 | 634 | — |
+| **Architecture** | 4-layer Conv2D + Dense | Inverted Residuals + ImageNet Weights | Mobile & edge optimized |
+
+---
+
+### 📋 Detailed Class-Level Evaluation Results (MobileNetV2 — Production Model)
+
+Evaluated across all produce classes and standardized quality grades (`Good`, `Bad`, `Unknown`):
+
+| Produce | Quality Grade Label | Precision | Recall | F1-Score | Test Support |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| 🍎 **Apple** | 🟢 **Good** | 0.77 | **1.00** | 0.87 | 40 |
+| 🍎 **Apple** | 🔴 **Bad** | 0.95 | 0.95 | 0.95 | 22 |
+| 🍎 **Apple** | 🟡 **Unknown** | **0.96** | 0.66 | 0.78 | 35 |
+| 🍌 **Banana** | 🟢 **Good** | 0.90 | 0.90 | 0.90 | 49 |
+| 🍌 **Banana** | 🔴 **Bad** | 0.00* | 0.00* | 0.00* | 0* |
+| 🍌 **Banana** | 🟡 **Unknown** | 0.90 | 0.90 | 0.90 | 48 |
+| 🍇 **Burmese Grape** | 🟢 **Good** | 0.93 | 0.87 | 0.90 | 62 |
+| 🍇 **Burmese Grape** | 🔴 **Bad** | 0.97 | 0.88 | 0.92 | 33 |
+| 🍇 **Burmese Grape** | 🟡 **Unknown** | 0.69 | 0.84 | 0.76 | 32 |
+| 🥭 **Mango** | 🟢 **Good** | 0.90 | 0.88 | 0.89 | 50 |
+| 🥭 **Mango** | 🔴 **Bad** | **1.00** | 0.87 | 0.93 | 23 |
+| 🥭 **Mango** | 🟡 **Unknown** | 0.82 | 0.92 | 0.87 | 50 |
+| 🍈 **Papaya** | 🟢 **Good** | 0.81 | 0.97 | 0.88 | 30 |
+| 🍈 **Papaya** | 🔴 **Bad** | **1.00** | **1.00** | **1.00** | 31 |
+| 🍈 **Papaya** | 🟡 **Unknown** | 0.95 | 0.69 | 0.80 | 29 |
+| 🍅 **Tomato** | 🟢 **Good** | 0.86 | 0.83 | 0.84 | 29 |
+| 🍅 **Tomato** | 🔴 **Bad** | 0.76 | 0.88 | 0.81 | 25 |
+| 🍅 **Tomato** | 🟡 **Unknown** | 0.86 | 0.78 | 0.82 | 46 |
+| **Summary** | **Overall Accuracy** | — | — | **0.87 (87%)** | **634** |
+| **Summary** | **Macro Average** | **0.83** | **0.82** | **0.82** | **634** |
+| **Summary** | **Weighted Average** | **0.88** | **0.87** | **0.87** | **634** |
+
+*\*Note: `banana_bad` had 0 test instances in this evaluation split.*
+
+---
+
+### 📋 Baseline Model Class-Level Report (Custom CNN)
+
+<details>
+<summary><b>Click to expand Baseline Custom CNN Evaluation Report (Accuracy: 78.0%)</b></summary>
+
+| Produce | Quality Grade Label | Precision | Recall | F1-Score | Test Support |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| 🍎 **Apple** | 🟢 **Good** | 0.74 | 0.93 | 0.82 | 40 |
+| 🍎 **Apple** | 🔴 **Bad** | 0.91 | 0.95 | 0.93 | 22 |
+| 🍎 **Apple** | 🟡 **Unknown** | 0.70 | 0.60 | 0.65 | 35 |
+| 🍌 **Banana** | 🟢 **Good** | 0.58 | 0.67 | 0.62 | 49 |
+| 🍌 **Banana** | 🔴 **Bad** | 0.00 | 0.00 | 0.00 | 0 |
+| 🍌 **Banana** | 🟡 **Unknown** | 0.59 | 0.48 | 0.53 | 48 |
+| 🍇 **Burmese Grape** | 🟢 **Good** | 0.74 | 0.94 | 0.83 | 62 |
+| 🍇 **Burmese Grape** | 🔴 **Bad** | 0.84 | 0.97 | 0.90 | 33 |
+| 🍇 **Burmese Grape** | 🟡 **Unknown** | 0.75 | 0.38 | 0.50 | 32 |
+| 🥭 **Mango** | 🟢 **Good** | 0.80 | 0.86 | 0.83 | 50 |
+| 🥭 **Mango** | 🔴 **Bad** | 0.91 | 0.87 | 0.89 | 23 |
+| 🥭 **Mango** | 🟡 **Unknown** | 0.84 | 0.62 | 0.71 | 50 |
+| 🍈 **Papaya** | 🟢 **Good** | 0.76 | 0.93 | 0.84 | 30 |
+| 🍈 **Papaya** | 🔴 **Bad** | 0.94 | 0.94 | 0.94 | 31 |
+| 🍈 **Papaya** | 🟡 **Unknown** | 0.86 | 0.62 | 0.72 | 29 |
+| 🍅 **Tomato** | 🟢 **Good** | 0.74 | 1.00 | 0.85 | 29 |
+| 🍅 **Tomato** | 🔴 **Bad** | 0.95 | 0.84 | 0.89 | 25 |
+| 🍅 **Tomato** | 🟡 **Unknown** | 0.93 | 0.80 | 0.86 | 46 |
+| **Summary** | **Overall Accuracy** | — | — | **0.78 (78%)** | **634** |
+| **Summary** | **Macro Average** | **0.75** | **0.74** | **0.74** | **634** |
+| **Summary** | **Weighted Average** | **0.78** | **0.78** | **0.77** | **634** |
+
+</details>
+
+---
+
+### 📈 Evaluation Plots & Visualizations
+
+#### 1. MobileNetV2 (Production Classifier — 87.0% Accuracy)
+
+| Training & Validation Curves | Confusion Matrix Heatmap |
+| :---: | :---: |
+| <img src="Model%20Training/Evaluation_Results/MobileNetV2/Model_Accuracy_and_Validation.png" alt="MobileNetV2 Accuracy & Loss Curves" width="460" /> | <img src="Model%20Training/Evaluation_Results/MobileNetV2/Metric.png" alt="MobileNetV2 Confusion Matrix" width="460" /> |
+
+#### 2. Custom CNN Baseline (78.0% Accuracy)
+
+| Training & Validation Curves | Confusion Matrix Heatmap |
+| :---: | :---: |
+| <img src="Model%20Training/Evaluation_Results/Custom_CNN/Accuracy_and_Validation.png" alt="Custom CNN Accuracy & Loss Curves" width="460" /> | <img src="Model%20Training/Evaluation_Results/Custom_CNN/Metric.png" alt="Custom CNN Confusion Matrix" width="460" /> |
 
 ---
 

@@ -948,35 +948,38 @@ const DetectionCard = ({
   isSelected?: boolean;
   onRemove?: () => void;
 }) => {
-  const [showCam, setShowCam] = useState(false);
   const getDisplayLabel = () => {
     if (det.label) {
       const l = det.label.toLowerCase();
       if (l === "fresh") return "Good";
       if (l === "rotten") return "Bad";
-      if (l === "adulterated" || l === "adulterant") return "Unknown";
+      if (l === "adulterant" || l === "adulterated") return "Unknown";
       return det.label;
     }
-    const c = det.class?.toLowerCase();
+    const c = det.class.toLowerCase();
     if (c === "fresh" || c === "good") return "Good";
     if (c === "rotten" || c === "bad") return "Bad";
-    if (c === "adulterated" || c === "unknown" || c === "adulterant") return "Unknown";
+    if (c === "adulterant" || c === "adulterated" || c === "unknown") return "Unknown";
     return det.class;
   };
-  const displayLabel = getDisplayLabel();
-  const fruitName = det.yolo_class && det.yolo_class !== "full_image"
-    ? det.yolo_class.charAt(0).toUpperCase() + det.yolo_class.slice(1)
-    : "Fruit";
 
-  const getStatusColor = (cls: string) => {
-    switch (cls?.toLowerCase()) {
+  const displayLabel = getDisplayLabel();
+  const fruitName = det.yolo_class && det.yolo_class !== "unknown" ? det.yolo_class : "produce";
+
+  const getStatusColor = (rawClass: string) => {
+    const s = rawClass.toLowerCase();
+    switch (s) {
+      case "fresh":
       case "good":
-      case "fresh": return "bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-200";
+        return "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300";
+      case "rotten":
       case "bad":
-      case "rotten": return "bg-red-50/70 dark:bg-red-950/30 border-red-300 dark:border-red-800/60 text-red-950 dark:text-red-200";
+        return "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300";
+      case "adulterant":
+      case "adulterated":
       case "unknown":
-      case "adulterated": return "bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/60 text-amber-950 dark:text-amber-200";
-      default: return "bg-white/40 dark:bg-zinc-900/60 border-white/60 dark:border-zinc-800 text-gray-900 dark:text-zinc-100";
+      default:
+        return "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300";
     }
   };
 
@@ -998,16 +1001,8 @@ const DetectionCard = ({
           {det.fallback && <p className="text-[11px] sm:text-xs font-medium opacity-70 mt-1">Full-image classification</p>}
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-          {det.gradcam_b64 && (
-            <button
-              onClick={() => setShowCam(!showCam)}
-              className="px-2.5 sm:px-3 py-1.5 bg-white/60 hover:bg-white dark:bg-zinc-800/90 dark:hover:bg-zinc-700 text-black dark:text-white border border-black/5 dark:border-zinc-700 rounded-lg text-xs font-bold transition-colors shadow-sm"
-            >
-              {showCam ? "Hide Explainability" : "Explainability"}
-            </button>
-          )}
-          {onRemove && (
+        {onRemove && (
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <button
               onClick={onRemove}
               title="Remove this detected fruit from dataset"
@@ -1016,28 +1011,17 @@ const DetectionCard = ({
               <Trash2 className="w-3.5 h-3.5" />
               <span>Remove</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {det.crop_b64 && (
         <div className="relative w-full h-40 sm:h-48 md:h-52 bg-black/5 dark:bg-black/40 rounded-xl overflow-hidden mt-1 sm:mt-2">
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={showCam ? "cam" : "crop"}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              src={`data:image/jpeg;base64,${showCam ? det.gradcam_b64 : det.crop_b64}`}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </AnimatePresence>
-          {showCam && (
-            <div className="absolute bottom-2 left-2 right-2 p-2 bg-black/60 backdrop-blur-md rounded-lg text-white text-xs flex gap-2 items-center">
-              <Info className="w-4 h-4 text-blue-400 shrink-0" />
-              <span className="text-[11px] sm:text-xs">Grad-CAM highlights regions influencing the AI prediction.</span>
-            </div>
-          )}
+          <img
+            src={`data:image/jpeg;base64,${det.crop_b64}`}
+            className="absolute inset-0 w-full h-full object-cover"
+            alt="Detected fruit crop"
+          />
         </div>
       )}
     </motion.div>

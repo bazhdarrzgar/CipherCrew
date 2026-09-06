@@ -40,7 +40,7 @@ export default function AboutPage() {
             CipherCrew® was developed to solve a crucial agricultural challenge: <strong className="text-black dark:text-white">Produce Quality Grading</strong>. Farmers and sellers need a simple, reliable method of sorting fruit produce according to visible quality before sale, replacing subjective and time-consuming manual sorting.
           </p>
           <p>
-            Our platform harnesses edge AI computer vision—<strong className="text-black dark:text-white">specifically fine-tuned YOLO bounding configurations stacked atop deep MobileNetV2 classification fibers</strong>—to detect produce boundaries, evaluate visible surface features, and grade uploaded produce into clearly defined categories such as <span className="italic">Good</span>, <span className="italic">Acceptable</span>, or <span className="italic">Damaged</span> accompanied by calibrated confidence scores.
+            Our platform harnesses edge AI computer vision—<strong className="text-black dark:text-white">specifically fine-tuned YOLO bounding configurations stacked atop deep MobileNetV2 classification fibers</strong>—to detect produce boundaries, evaluate visible surface features, and grade uploaded produce into clearly defined categories such as <span className="italic">Good</span>, <span className="italic">Bad</span>, or <span className="italic">Unknown</span> data accompanied by calibrated confidence scores.
           </p>
           <p>
             Equipped with rejected-image handling to safeguard against unrelated or unusable uploads, the system provides instant batch and single-item grading summaries for sellers and distributors.

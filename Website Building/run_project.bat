@@ -32,7 +32,7 @@ call :FreePort 3000 "Frontend"
 echo.
 
 echo [1/3] Starting Backend Server (FastAPI on http://127.0.0.1:8000)...
-start "CipherCrew - Backend" cmd /k "title CipherCrew - Backend && cd /d "%~dp0fruit-web" && call venv\Scripts\activate.bat && uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
+start "CipherCrew - Backend" cmd /k "title CipherCrew - Backend && cd /d "%~dp0fruit-web" && call venv\Scripts\activate.bat && python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
 
 echo [2/3] Starting Frontend Server (Next.js on http://localhost:3000)...
 start "CipherCrew - Frontend" cmd /k "title CipherCrew - Frontend && cd /d "%~dp0frontend" && npm run dev"
