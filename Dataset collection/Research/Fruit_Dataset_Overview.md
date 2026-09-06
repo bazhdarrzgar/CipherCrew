@@ -10,45 +10,6 @@
 
 ---
 
-## 🍎 FruQ-DB — Official Dataset (Zenodo)
-
-- **Official Zenodo Repository:** [FruQ-DB on Zenodo — Official Dataset](https://zenodo.org/records/7224690)
-- **Direct DOI:** [10.5281/zenodo.7224690](https://doi.org/10.5281/zenodo.7224690)
-- **Kaggle Mirror:** [FruitQ Dataset on Kaggle](https://www.kaggle.com/datasets/sholzz/fruitq-dataset)
-
-Contains **5,647 preprocessed 224×224 images** from multiple fruits across 3 native quality classes.
-
-### Quality Class Breakdown & Project Mapping
-
-| Original Class | Image Count | Meaning / Decay Stage | Project Label Mapping |
-|---|---|---|---|
-| 🟢 **Fresh** | 2,182 | Peak freshness, no decay | **Good** |
-| 🟡 **Mild** | 1,364 | Early/mild onset of decay | **Acceptable** |
-| 🔴 **Rotten** | 2,101 | Pronounced rot or spoilage | **Damaged** |
-| **Total** | **5,647** | | |
-
-### Produce Varieties (11 Varieties)
-Banana, Cucumber, Grape, Kaki (Persimmon), Papaya, Peach, Pear, Pepper, Strawberry, Tomato, and Watermelon.
-
-### Dataset Specifications
-
-| Item | Details |
-|---|---|
-| **Dataset Size** | 5,647 images |
-| **Image Size** | 224 × 224 |
-| **Input Format** | RGB fruit images (JPG) |
-| **Task** | 3-class image classification |
-| **Best Model Architectures** | CNN / MobileNetV3 / EfficientNet / ResNet / ViT |
-| **Source** | Zenodo |
-| **DOI** | [10.5281/zenodo.7224690](https://doi.org/10.5281/zenodo.7224690) |
-
-> [!TIP]
-> **⭐ Strategic Hackathon Recommendation:**
-> - **FruQ-DB vs. FruitNet:** FruitNet has more images and uses `Good` / `Bad` / `Mixed` (where `Mixed` denotes multi-fruit imagery rather than freshness). FruQ-DB provides the natural decay progression: `Fresh` $\rightarrow$ `Mild` $\rightarrow$ `Rotten`, aligning seamlessly with `Good` $\rightarrow$ `Acceptable` $\rightarrow$ `Damaged`.
-> - **Documentation Note:** In project write-ups and documentation, state clearly that `Good`, `Acceptable`, and `Damaged` are your application's domain interpretations of the dataset's native labels (`Fresh`, `Mild`, `Rotten`).
-
----
-
 ## 📥 AFruitDB — Direct Dataset
 
 - **Mendeley Data Download:** [Download AFruitDB dataset — Mendeley Data](https://data.mendeley.com/datasets/bz65dz2pbj/1)
