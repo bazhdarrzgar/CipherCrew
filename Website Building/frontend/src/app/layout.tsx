@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { WaveBackground } from "@/components/WaveBackground";
 
 export const metadata: Metadata = {
-  title: "CipherCrew - Fruit Adulteration Detector",
+  title: "CipherCrew - Fruit Unknown Data Detector",
   description: "Scan to Know Whether You Are Eating a Fruit or Chemicals. Powered by CipherCrew AI.",
   icons: {
     icon: [

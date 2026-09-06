@@ -1,5 +1,5 @@
 """
-Fruit Adulteration Detection API
+Fruit Unknown Data Detection API
 FastAPI backend wrapping YOLO + Keras classifier pipeline
 Deploy on Render.com
 """
@@ -84,7 +84,7 @@ IMAGENET_MEAN_RGB = np.array([123.68, 116.779, 103.939], dtype=np.float32)
 # ───────────────────────── App ─────────────────────────
 
 app = FastAPI(
-    title="CipherCrew - Fruit Adulteration Detector",
+    title="CipherCrew - Fruit Unknown Data Detector",
     description="YOLO + Keras classifier for good / bad / unknown fruit",
     version="1.0.0",
 )
@@ -301,7 +301,7 @@ def image_to_base64(img_bgr: np.ndarray) -> str:
 def root():
     return {
         "status": "ok",
-        "message": "Fruit Adulteration Detector API",
+        "message": "Fruit Unknown Data Detector API",
         "classes": [DISPLAY_NAMES.get(cls, cls) for cls in CLASS_NAMES],
         "detectable_fruits": sorted(DETECTABLE_FRUIT_CLASSES),
     }

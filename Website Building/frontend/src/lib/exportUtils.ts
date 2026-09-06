@@ -102,7 +102,7 @@ export function exportToPDF(items: ExportableBatchItem[], filename = "ciphercrew
   <div class="stat" style="border-color:#fee2e2"><div class="stat-value" style="color:#dc2626">${summary.rejected}</div><div class="stat-label">Rejected</div></div>
 </div>
 <table><thead><tr><th>No.</th><th>ID</th><th>File Name</th><th>Fruit</th><th>Category</th><th>Confidence</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
-<div class="footer">&copy; ${new Date().getFullYear()} CipherCrew - AI Fruit Adulteration Detection Platform</div>
+<div class="footer">&copy; ${new Date().getFullYear()} CipherCrew - AI Fruit Unknown Data Detection Platform</div>
 </body></html>`;
 
   const printWindow = window.open("", "_blank", "width=900,height=700");

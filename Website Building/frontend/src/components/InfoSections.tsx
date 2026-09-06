@@ -14,7 +14,7 @@ export const InfoSections = () => {
           {[
             { icon: <ScanSearch className="w-10 h-10 text-white" />, title: "1. Upload", desc: "Upload an image of any fruit you want to test." },
             { icon: <Cpu className="w-10 h-10 text-white" />, title: "2. Analyze", desc: "Our YOLOv8 & MobileNet pipeline identifies and analyzes each object." },
-            { icon: <ShieldCheck className="w-10 h-10 text-white" />, title: "3. Result", desc: "Get real-time feedback on freshness and potential adulteration." },
+            { icon: <ShieldCheck className="w-10 h-10 text-white" />, title: "3. Result", desc: "Get real-time feedback on freshness and potential unknown data." },
           ].map((item, idx) => (
             <motion.div 
               key={idx}

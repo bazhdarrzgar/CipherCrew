@@ -2,10 +2,10 @@
   <img src="frontend/public/logo.png" alt="CipherCrew Logo" width="140" />
 </p>
 
-<h1 align="center">CipherCrew — Fruit Quality & Adulteration Detector</h1>
+<h1 align="center">CipherCrew — Fruit Quality & Unknown Data Detector</h1>
 
 <p align="center">
-  <b>An AI-powered visual inspection platform for assessing fruit freshness, spoilage, and adulteration</b>
+  <b>An AI-powered visual inspection platform for assessing fruit freshness, spoilage, and unknown data</b>
 </p>
 
 <p align="center">
@@ -32,7 +32,7 @@
 
 ## 📖 Overview
 
-**CipherCrew** is a full-stack computer vision application that evaluates the condition of fruits from uploaded photographs. Users submit an image through a modern web interface, and the system returns an instant quality assessment — classifying each detected fruit as **Good** (fresh), **Bad** (rotten), or **Unknown** (potentially adulterated).
+**CipherCrew** is a full-stack computer vision application that evaluates the condition of fruits from uploaded photographs. Users submit an image through a modern web interface, and the system returns an instant quality assessment — classifying each detected fruit as **Good** (fresh), **Bad** (rotten), or **Unknown** (potentially unknown data).
 
 Under the hood, the platform pairs **YOLOv8** object detection with a **MobileNetV2-based Keras classifier**. YOLO first localises individual fruits within the frame (apples, bananas, oranges), and each isolated crop is then fed into the classifier for condition grading. When no recognisable fruit bounding box is found, the entire image is analysed as a fallback — ensuring every upload receives a result.
 
@@ -94,7 +94,7 @@ Under the hood, the platform pairs **YOLOv8** object detection with a **MobileNe
 |---|---|---|
 | `fresh` | **Good** | The fruit appears fresh and in healthy condition |
 | `rotten` | **Bad** | The fruit shows signs of spoilage or decay |
-| `adulterated` | **Unknown** | The fruit exhibits visual patterns associated with adulteration |
+| `adulterated` | **Unknown** | The fruit exhibits visual patterns associated with unknown data |
 
 ---
 

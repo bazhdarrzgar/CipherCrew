@@ -1,6 +1,6 @@
 # CipherCrew - Complete Run & Setup Guide
 
-This guide provides step-by-step instructions on how to install, configure, and run the **CipherCrew** (Fruit Quality & Adulteration Detector) project on Windows (as well as Linux / macOS).
+This guide provides step-by-step instructions on how to install, configure, and run the **CipherCrew** (Fruit Quality & Unknown Data Detector) project on Windows (as well as Linux / macOS).
 
 ---
 
