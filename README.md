@@ -65,7 +65,7 @@ The system combines:
          Fruit Detected?
          ├── YES ──► Extract individual crops ──┐
          │                                       │
-         └── NO  ──► Use full input image  ──────┤
+         └── NO  ──► Unknown Data                │
                                                  ▼
                                      ┌─────────────────────────┐
                                      │  MobileNetV2 Classifier │
